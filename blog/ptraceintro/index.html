@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>wololo!</title>
+
+      <!-- CSS -->
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;print.css" media="print">
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;poole.css">
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;hyde.css">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+      
+        <link rel="alternate" type="application/rss+xml" title="RSS" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;rss.xml">
+      
+
+      
+      
+    </head>
+
+    <body class="theme-base-08 ">
+        
+            <div class="sidebar">
+                <div class="container sidebar-sticky">
+                    <div class="sidebar-about">
+                        
+                            <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>wololo!</h1></a>
+                            
+                            <p class="lead">Much ado about programming</p>
+                            
+                        
+                    </div>
+
+                    <ul class="sidebar-nav">
+                        
+                        
+                        <li><a href="&#x2F;about&#x2F;about">Home</a></li>
+                        
+                        <li><a href="&#x2F;about&#x2F;about">About me</a></li>
+                        
+                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
+                        
+                        <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github Page</a></li>
+                        
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div class="content container">
+            
+<div class="post">
+  <h1 class="post-title">Ptrace and You</h1>
+  <span class="post-date"> Last updated: 2018-06-16</span>
+  <h2 id="ptrace">Ptrace & You: A comprehensive overview of ptrace</h2>
+<p>Our current project involves heavy use of <code>ptrace</code>. While <code>man 2 ptrace</code> offers
+a in depth technical description, it is very difficult to follow for begginners (hence all
+the introduction to ptrace blogs around). While these blogs helped me get started, I don't
+believe any of them offers an in-depth, comprehensive view of ptrace: it's many features and
+just as many ways to shoot yourself in the foot. TODO Rewrite last sentence</p>
+<p>I found these particular blogs helpful:
+TODO Add link to:
+Write you an strace, ptrace gotchas.</p>
+<p>After a year of using <code>ptrace</code>, I hope to have something useful to say about ptrace. For
+those trying to understand it, and hopefully make it easier to break through the
+description on the man page.</p>
+<h3 id="what-is-ptrace">What is ptrace?</h3>
+<p>Ptrace is a Linux system call which allows a process (known as the <em>tracer</em>) to trace
+another process (the <em>tracee</em>) through ptrace, the tracer can intercept events in the
+<em>tracee</em> such as: system calls, signals, execves, and more.</p>
+<p>The <em>tracer</em> can also read and write to arbitrary locations in: program memory, or CPU
+registers, of the <em>tracee</em>. This functionality is very powerful, programs such as gdb and
+strace use ptrace under the hood!</p>
+<h3 id="ptrace-at-the-kernel-level">Ptrace at the kernel level</h3>
+<p>From the Linux man page (TODO add link), &quot;The ptrace API (ab)uses the standard UNIX
+parent/child  signaling  over  waitpid(2).&quot;</p>
+<p>Ptrace, in some ways, replaces the <em>tracee</em>'s true parent with our <em>tracer</em>. When one
+of many ptrace events happens, the kernel puts the <em>tracee</em> in a stopped state, forwards
+the message to the <em>tracer</em>, the tracer may perform arbitrary computation here. The
+<em>tracer</em> then sends one of several ptrace continue events through a <code>ptrace</code> system call,
+the kernel allows the currently stopped <em>tracee</em> to run once more.</p>
+<h3 id="ptrace-overhead">Ptrace overhead</h3>
+<p>Ptrace is not known to be fast, and inccurs significant overhead. (TODO: Add over head
+measurement here). The overhead comes from the number of context switches required to
+intercept an event. Consider a system call event, usually this is requires two context
+switches: userspace to kernelspace, and back to userspace. With <code>ptrace</code> this is doubled:
+<em>tracee</em> to kernel, kernel to <em>tracer</em>, <em>tracer</em> to kernel, and kernel to <em>tracee</em>.</p>
+<h3 id="using-ptrace">Using ptrace</h3>
+<p>Let's have a look at the <code>ptrace</code> system call API:</p>
+<pre style="background-color:#fdf6e3">
+<span style="background-color:#fdf6e3;color:#268bd2;">long </span><span style="background-color:#fdf6e3;color:#b58900;">ptrace</span><span style="background-color:#fdf6e3;color:#657b83;">(</span><span style="background-color:#fdf6e3;color:#268bd2;">enum</span><span style="background-color:#fdf6e3;color:#657b83;"> __ptrace_request </span><span style="background-color:#fdf6e3;color:#268bd2;">request</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#859900;">pid_t </span><span style="background-color:#fdf6e3;color:#268bd2;">pid</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#268bd2;">void </span><span style="background-color:#fdf6e3;color:#859900;">*</span><span style="background-color:#fdf6e3;color:#268bd2;">addr</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#268bd2;">void </span><span style="background-color:#fdf6e3;color:#859900;">*</span><span style="background-color:#fdf6e3;color:#268bd2;">data</span><span style="background-color:#fdf6e3;color:#657b83;">);
+</span></pre>
+<p>As we will see, a lot of functionality and complexity is packed into this API.</p>
+<h3 id="future-ptrace-blog-posts">Future Ptrace Blog Posts</h3>
+<p>In the future I hope to also create blog posts for:</p>
+<ul>
+<li>System call tracing with ptrace</li>
+<li>Selectively Tracing System Calls: Using ptrace with seccomp</li>
+<li>Ptrace with multiprocesses</li>
+<li>Ptrace and signals</li>
+<li>Ptrace with threads</li>
+</ul>
+
+</div>
+
+        </div>
+    </body>
+
+</html>
