@@ -16,8 +16,6 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
       
-        <link rel="alternate" type="application/rss+xml" title="RSS" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;rss.xml">
-      
 
       
       
@@ -57,51 +55,99 @@
             
 <div class="post">
   <h1 class="post-title">Ptrace and You</h1>
-  <span class="post-date"> Last updated: 2018-06-16</span>
+  <span class="post-date"> Last updated: 2018-06-19</span>
   <h2 id="ptrace">Ptrace & You: A comprehensive overview of ptrace</h2>
 <p>Our current project involves heavy use of <code>ptrace</code>. While <code>man 2 ptrace</code> offers
-a in depth technical description, it is very difficult to follow for begginners (hence all
-the introduction to ptrace blogs around). While these blogs helped me get started, I don't
-believe any of them offers an in-depth, comprehensive view of ptrace: it's many features and
-just as many ways to shoot yourself in the foot. TODO Rewrite last sentence</p>
-<p>I found these particular blogs helpful:
-TODO Add link to:
-Write you an strace, ptrace gotchas.</p>
-<p>After a year of using <code>ptrace</code>, I hope to have something useful to say about ptrace. For
-those trying to understand it, and hopefully make it easier to break through the
-description on the man page.</p>
+an in depth technical description, it is very difficult to follow for beginners (hence all
+the introduction to <code>ptrace</code> blogs around). While these blogs helped me get started, I feel
+there is a lack of resources for in-depth, comprehensive view of <code>ptrace</code> and it's many features
+and pitfalls.</p>
+<p>After a year of using <code>ptrace</code>, I hope to have something useful to say for newcomers
+and those trying break through the description on the man page. Of course, one post is not
+enough to cover even the main functionality of <code>ptrace</code>. So this is a multi-part series on
+<code>ptrace</code>!</p>
+<p>For another point of view, I found these blogs to be excellent:</p>
+<ul>
+<li><a href="https://blog.nelhage.com/2010/08/write-yourself-an-strace-in-70-lines-of-code/">Write you an strace in 70 lines of code</a></li>
+<li><a href="https://www.cyphar.com/blog/post/20160703-remainroot-ptrace-hell">Adventures into ptrace(2) Hell</a></li>
+</ul>
 <h3 id="what-is-ptrace">What is ptrace?</h3>
-<p>Ptrace is a Linux system call which allows a process (known as the <em>tracer</em>) to trace
-another process (the <em>tracee</em>) through ptrace, the tracer can intercept events in the
+<p>Ptrace is a Linux system call which allows a process (the <em>tracer</em>) to trace
+another process (the <em>tracee</em>) through <code>ptrace</code>, the tracer can intercept events in the
 <em>tracee</em> such as: system calls, signals, execves, and more.</p>
 <p>The <em>tracer</em> can also read and write to arbitrary locations in: program memory, or CPU
-registers, of the <em>tracee</em>. This functionality is very powerful, programs such as gdb and
-strace use ptrace under the hood!</p>
+registers, of the <em>tracee</em>. This functionality is extremely powerful, programs such as
+<code>gdb</code> and <code>strace</code> are powered by <code>ptrace</code>!</p>
 <h3 id="ptrace-at-the-kernel-level">Ptrace at the kernel level</h3>
-<p>From the Linux man page (TODO add link), &quot;The ptrace API (ab)uses the standard UNIX
-parent/child  signaling  over  waitpid(2).&quot;</p>
+<p>From the <code>ptrace</code> <a href="https://linux.die.net/man/2/ptrace">man page</a>,
+&quot;The ptrace API (ab)uses the standard UNIX parent/child  signaling  over  waitpid(2).&quot;</p>
 <p>Ptrace, in some ways, replaces the <em>tracee</em>'s true parent with our <em>tracer</em>. When one
-of many ptrace events happens, the kernel puts the <em>tracee</em> in a stopped state, forwards
+of many ptrace-events happens, the kernel puts the <em>tracee</em> in a stopped state, forwards
 the message to the <em>tracer</em>, the tracer may perform arbitrary computation here. The
-<em>tracer</em> then sends one of several ptrace continue events through a <code>ptrace</code> system call,
-the kernel allows the currently stopped <em>tracee</em> to run once more.</p>
+<em>tracer</em> then sends one of several <code>ptrace</code> continue events through a <code>ptrace</code> system call,
+the kernel allows the stopped <em>tracee</em> to run once more.</p>
 <h3 id="ptrace-overhead">Ptrace overhead</h3>
-<p>Ptrace is not known to be fast, and inccurs significant overhead. (TODO: Add over head
-measurement here). The overhead comes from the number of context switches required to
+<p>Ptrace is not known to be fast, and incurs significant overhead. Surprisingly,
+I have not been able to find any report/publication quantifying the overhead of <code>ptrace</code>.
+However, a very rough test, running a simple for loop <em>n</em> times (for a sufficiently
+large <em>n</em>), doing a trivial system call, like <code>getpid()</code>:</p>
+<pre style="background-color:#fdf6e3">
+<span style="background-color:#fdf6e3;color:#cb4b16;">#include </span><span style="background-color:#fdf6e3;color:#839496;">&lt;</span><span style="background-color:#fdf6e3;color:#2aa198;">unistd.h</span><span style="background-color:#fdf6e3;color:#839496;">&gt;
+</span><span style="background-color:#fdf6e3;color:#cb4b16;">#include </span><span style="background-color:#fdf6e3;color:#839496;">&lt;</span><span style="background-color:#fdf6e3;color:#2aa198;">stdio.h</span><span style="background-color:#fdf6e3;color:#839496;">&gt;
+</span><span style="background-color:#fdf6e3;color:#cb4b16;">#include </span><span style="background-color:#fdf6e3;color:#839496;">&lt;</span><span style="background-color:#fdf6e3;color:#2aa198;">stdint.h</span><span style="background-color:#fdf6e3;color:#839496;">&gt;
+</span><span style="background-color:#fdf6e3;color:#cb4b16;">#include </span><span style="background-color:#fdf6e3;color:#839496;">&lt;</span><span style="background-color:#fdf6e3;color:#2aa198;">sys/syscall.h</span><span style="background-color:#fdf6e3;color:#839496;">&gt;
+</span><span style="background-color:#fdf6e3;color:#657b83;">
+</span><span style="background-color:#fdf6e3;color:#268bd2;">int </span><span style="background-color:#fdf6e3;color:#b58900;">main</span><span style="background-color:#fdf6e3;color:#657b83;">(){
+</span><span style="background-color:#fdf6e3;color:#657b83;">  </span><span style="background-color:#fdf6e3;color:#859900;">for</span><span style="background-color:#fdf6e3;color:#657b83;">(</span><span style="background-color:#fdf6e3;color:#268bd2;">int</span><span style="background-color:#fdf6e3;color:#657b83;"> i = </span><span style="background-color:#fdf6e3;color:#6c71c4;">0</span><span style="background-color:#fdf6e3;color:#657b83;">; i &lt; </span><span style="background-color:#fdf6e3;color:#6c71c4;">10000000</span><span style="background-color:#fdf6e3;color:#657b83;">; i++){
+</span><span style="background-color:#fdf6e3;color:#657b83;">    </span><span style="background-color:#fdf6e3;color:#268bd2;">int</span><span style="background-color:#fdf6e3;color:#657b83;"> res = </span><span style="background-color:#fdf6e3;color:#268bd2;">syscall</span><span style="background-color:#fdf6e3;color:#657b83;">(SYS_getpid);
+</span><span style="background-color:#fdf6e3;color:#657b83;">  </span><span style="background-color:#fdf6e3;color:#657b83;">}
+</span><span style="background-color:#fdf6e3;color:#657b83;">
+</span><span style="background-color:#fdf6e3;color:#657b83;">  </span><span style="background-color:#fdf6e3;color:#859900;">return </span><span style="background-color:#fdf6e3;color:#6c71c4;">0</span><span style="background-color:#fdf6e3;color:#657b83;">;
+</span><span style="background-color:#fdf6e3;color:#657b83;">}
+</span></pre>
+<p>On my laptop, this program takes 0.82 seconds of user time (averaged from 3 runs using the <code>time</code>
+command). While ptraced, it takes about 13.18 seconds, a 15x slowdown. Note this
+is a worst case scenario when a program continuously calls many system calls. <code>getpid()</code>
+is one the faster system call, so the time spent in the kernel is dwarfed by the
+context switching overhead.</p>
+<p>The overhead comes from the number of context switches required to
 intercept an event. Consider a system call event, usually this is requires two context
 switches: userspace to kernelspace, and back to userspace. With <code>ptrace</code> this is doubled:
-<em>tracee</em> to kernel, kernel to <em>tracer</em>, <em>tracer</em> to kernel, and kernel to <em>tracee</em>.</p>
+<em>tracee</em> to kernel, kernel to <em>tracer</em>, <em>tracer</em> to kernel, and kernel to <em>tracee</em>. To add
+to the cost, system calls are intercepted once before the system call is executed in the
+<em>pre-hook</em> and once after the system call, in the <em>post-hook</em>. Thus we can see where the
+overhead comes from. (In a future blog, we will see how using <code>seccomp + bpf + ptrace</code>, we
+can mitigate this overhead, and the number of context switches).</p>
 <h3 id="using-ptrace">Using ptrace</h3>
 <p>Let's have a look at the <code>ptrace</code> system call API:</p>
 <pre style="background-color:#fdf6e3">
 <span style="background-color:#fdf6e3;color:#268bd2;">long </span><span style="background-color:#fdf6e3;color:#b58900;">ptrace</span><span style="background-color:#fdf6e3;color:#657b83;">(</span><span style="background-color:#fdf6e3;color:#268bd2;">enum</span><span style="background-color:#fdf6e3;color:#657b83;"> __ptrace_request </span><span style="background-color:#fdf6e3;color:#268bd2;">request</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#859900;">pid_t </span><span style="background-color:#fdf6e3;color:#268bd2;">pid</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#268bd2;">void </span><span style="background-color:#fdf6e3;color:#859900;">*</span><span style="background-color:#fdf6e3;color:#268bd2;">addr</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#268bd2;">void </span><span style="background-color:#fdf6e3;color:#859900;">*</span><span style="background-color:#fdf6e3;color:#268bd2;">data</span><span style="background-color:#fdf6e3;color:#657b83;">);
 </span></pre>
 <p>As we will see, a lot of functionality and complexity is packed into this API.</p>
+<ul>
+<li>
+<p><code>request</code> refers to the type of event we want from <code>ptrace</code>. Some of the more
+common events include PTRACE_PEEKDATA, PTRACE_POKEDATA, PTRACE_GETREGS, PTRACE_SETREGS,
+PTRACE_SETOPTIONS, PTRACE_CONT, PTRACE_SYSCALL, and PTRACE_ATTACH. In the next post,
+we will review these requests.</p>
+</li>
+<li>
+<p><code>pid</code> refers to the process idea that this action is for. It must be specified since
+we can be tracing multiple threads or processes from a single tracer.</p>
+</li>
+<li>
+<p><code>addr</code> and <code>data</code>, these arguments' meaning is context depended based on the <code>request</code>.
+<code>addr</code> usually refers to a memory location on the tracee's memory space, while <code>data</code>
+is some value we wish <code>ptrace</code> to use.</p>
+</li>
+</ul>
+<p>In the next section we will use <code>ptrace</code> to trace the system calls of an arbitrary process.</p>
 <h3 id="future-ptrace-blog-posts">Future Ptrace Blog Posts</h3>
 <p>In the future I hope to also create blog posts for:</p>
 <ul>
-<li>System call tracing with ptrace</li>
-<li>Selectively Tracing System Calls: Using ptrace with seccomp</li>
+<li>System call tracing with <code>ptrace</code></li>
+<li>Selectively Tracing System Calls: Using <code>ptrace</code> with <code>seccomp + bpf</code></li>
+<li>Speeding up <code>ptrace</code> read/writes with <code>process_vm_read</code> &amp; <code>process_vm_write</code></li>
 <li>Ptrace with multiprocesses</li>
 <li>Ptrace and signals</li>
 <li>Ptrace with threads</li>
