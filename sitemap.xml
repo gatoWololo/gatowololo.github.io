@@ -8,6 +8,13 @@
         </url>
     
         <url>
+            <loc>https://gatowololo.github.io/blog/clangmissingheaders/</loc>
+            
+                <lastmod>2018-11-14</lastmod>
+            
+        </url>
+    
+        <url>
             <loc>https://gatowololo.github.io/blog/main/</loc>
             
                 <lastmod>2018-06-18</lastmod>
@@ -26,14 +33,5 @@
             <loc>https://gatowololo.github.io/</loc>
         </url>
     
-    
-        <url>
-            <loc>https://gatowololo.github.io/categories/</loc>
-        </url>
-    
-    
-        <url>
-            <loc>https://gatowololo.github.io/tags/</loc>
-        </url>
     
 </urlset>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>wololo!</title>
+
+      <!-- CSS -->
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;print.css" media="print">
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;poole.css">
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;hyde.css">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+      
+
+      
+      
+    </head>
+
+    <body class="theme-base-08 ">
+        
+            <div class="sidebar">
+                <div class="container sidebar-sticky">
+                    <div class="sidebar-about">
+                        
+                            <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>wololo!</h1></a>
+                            
+                            <p class="lead">Much ado about programming</p>
+                            
+                        
+                    </div>
+
+                    <ul class="sidebar-nav">
+                        
+                        
+                        <li><a href="&#x2F;about&#x2F;about">Home</a></li>
+                        
+                        <li><a href="&#x2F;about&#x2F;about">About me</a></li>
+                        
+                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
+                        
+                        <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github Page</a></li>
+                        
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div class="content container">
+            
+<div class="post">
+  <h1 class="post-title">Clang++ missing C++ header?</h1>
+  <span class="post-date"> Last updated: 2018-11-14</span>
+  <p>(Hopefully someone will find this useful, since I was not able to find any other clear
+resource online).</p>
+<h3 id="problem">Problem</h3>
+<p>In our Linux Ubuntu 18.04 server, I kept getting this error when trying to compile our
+C++ project with clang++</p>
+<pre style="background-color:#fdf6e3">
+<span style="background-color:#fdf6e3;color:#268bd2;">dettraceSystemCall.cpp:17:10:</span><span style="background-color:#fdf6e3;color:#657b83;"> fatal error: </span><span style="background-color:#fdf6e3;color:#839496;">&#39;</span><span style="background-color:#fdf6e3;color:#2aa198;">limits</span><span style="background-color:#fdf6e3;color:#839496;">&#39;</span><span style="background-color:#fdf6e3;color:#657b83;"> file not found
+</span><span style="background-color:#fdf6e3;color:#93a1a1;">#include &lt;limits&gt;
+</span><span style="background-color:#fdf6e3;color:#657b83;">        </span><span style="background-color:#fdf6e3;color:#268bd2;">^~~~~~~~
+</span></pre>
+<p>Looking online I was not able to find much help. Googling &quot;clang missing c++ headers&quot;
+returned the only relevant search <a href="https://stackoverflow.com/questions/26333823/clang-doesnt-see-basic-headers">clang doesn't see basic headers</a>.</p>
+<p>None of these answers were helpful to me... Compiling with g++ works, so I do have the correct C++ headers installed.</p>
+<h3 id="solution">Solution</h3>
+<p>Taking the failing command from <code>make</code> and running it manually, I could reproduce the issue:
+<code>clang++ -Wall -c -o dettraceSystemCall.o dettraceSystemCall.cpp</code></p>
+<p>I added the <code>-E</code> (call only the preprocessor, for those that don't know, the C and C++
+preprocessor is responsible for expanding macros and finding headers) and <code>-v</code> (verbose)
+flags.</p>
+<p>This prints out a lot of input, but shorted to the relevant parts:</p>
+<pre style="background-color:#fdf6e3">
+<span style="background-color:#fdf6e3;color:#268bd2;">clang</span><span style="background-color:#fdf6e3;color:#657b83;"> version 6.0.0-1ubuntu2 (tags/RELEASE_600/final)
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Target:</span><span style="background-color:#fdf6e3;color:#657b83;"> x86_64-pc-linux-gnu
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Thread</span><span style="background-color:#fdf6e3;color:#657b83;"> model: posix
+</span><span style="background-color:#fdf6e3;color:#268bd2;">InstalledDir:</span><span style="background-color:#fdf6e3;color:#657b83;"> /usr/bin
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Found</span><span style="background-color:#fdf6e3;color:#657b83;"> candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/7
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Found</span><span style="background-color:#fdf6e3;color:#657b83;"> candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/7.3.0
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Found</span><span style="background-color:#fdf6e3;color:#657b83;"> candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/8
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Found</span><span style="background-color:#fdf6e3;color:#657b83;"> candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/7
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Found</span><span style="background-color:#fdf6e3;color:#657b83;"> candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/7.3.0
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Found</span><span style="background-color:#fdf6e3;color:#657b83;"> candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/8
+</span><span style="background-color:#fdf6e3;color:#268bd2;">Selected</span><span style="background-color:#fdf6e3;color:#657b83;"> GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/8
+</span><span style="background-color:#fdf6e3;color:#268bd2;">...
+</span><span style="background-color:#fdf6e3;color:#93a1a1;">#include &quot;...&quot; search starts here:
+</span><span style="background-color:#fdf6e3;color:#93a1a1;">#include &lt;...&gt; search starts here:
+</span><span style="background-color:#fdf6e3;color:#268bd2;">../include
+</span><span style="background-color:#fdf6e3;color:#268bd2;">/usr/bin/../lib/gcc/x86_64-linux-gnu/8/../../../../include/c++
+</span><span style="background-color:#fdf6e3;color:#268bd2;">/usr/include/clang/6.0.0/include
+</span><span style="background-color:#fdf6e3;color:#268bd2;">/usr/local/include
+</span><span style="background-color:#fdf6e3;color:#268bd2;">/usr/include/x86_64-linux-gnu
+</span><span style="background-color:#fdf6e3;color:#268bd2;">/usr/include
+</span><span style="background-color:#fdf6e3;color:#268bd2;">End</span><span style="background-color:#fdf6e3;color:#657b83;"> of search list.
+</span><span style="background-color:#fdf6e3;color:#268bd2;">...
+</span></pre>
+<p>So, the server has several gcc installations: 7, 7.3, and 8. Out of those clang++
+is picking gcc version 8: <code>Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/8</code>.</p>
+<p>Since <code>g++</code> works I know the C++ headers have to be somewhere? Where are they located?</p>
+<pre style="background-color:#fdf6e3">
+<span style="background-color:#fdf6e3;color:#268bd2;">$</span><span style="background-color:#fdf6e3;color:#657b83;">&gt; find /usr</span><span style="background-color:#fdf6e3;color:#268bd2;"> -name </span><span style="background-color:#fdf6e3;color:#839496;">&quot;</span><span style="background-color:#fdf6e3;color:#2aa198;">iostream</span><span style="background-color:#fdf6e3;color:#839496;">&quot;
+</span><span style="background-color:#fdf6e3;color:#268bd2;">/usr/include/c++/7/iostream
+</span></pre>
+<p>Interesting... Only g++-7 seems to have the C++ header files, but it's picking gcc-8 as the installation to use!
+Somehow, the server has g++-8 installed but not it's header files? I used <code>sudo apt install g++-8</code> to install all g++-8 headers.</p>
+<p>Now:</p>
+<pre style="background-color:#fdf6e3">
+<span style="background-color:#fdf6e3;color:#657b83;">$&gt; find /usr -name &quot;iostream&quot;
+</span><span style="background-color:#fdf6e3;color:#657b83;">/usr/include/c++/8/iostream
+</span><span style="background-color:#fdf6e3;color:#657b83;">/usr/include/c++/7/iostream
+</span></pre>
+<p>And clang++ works :)</p>
+<h2 id="background">Background</h2>
+<p>It seems the cause of the issue is that clang++ does not come with it's own headers or
+runtime for C or C++. Instead it relies on other projects to providing these (usually gcc/g++
+for most Linux systems, or an alternative implementation like <a href="https://libcxx.llvm.org/">libc++</a>).
+So you will often see online answers point to installing libc++ to solve this issue.</p>
+<p>(Thanks to <a href="https://cxwangyi.wordpress.com/2012/01/20/using-clang-cannot-find-standard-header/">this blog</a> for pointing me in the right direction!)</p>
+
+</div>
+
+        </div>
+    </body>
+
+</html>
