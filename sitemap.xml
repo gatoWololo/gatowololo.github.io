@@ -1,37 +1,44 @@
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
     
         <url>
-            <loc>https://gatowololo.github.io/about/about/</loc>
-            
-                <lastmod>2018-05-23</lastmod>
+            <loc>http%3A//127.0.0.1%3A1111/</loc>
             
         </url>
     
         <url>
-            <loc>https://gatowololo.github.io/blog/clangmissingheaders/</loc>
+            <loc>http%3A//127.0.0.1%3A1111/blog/clangmissingheaders/</loc>
             
                 <lastmod>2018-11-14</lastmod>
             
         </url>
     
         <url>
-            <loc>https://gatowololo.github.io/blog/main/</loc>
+            <loc>http%3A//127.0.0.1%3A1111/blog/fuse/</loc>
+            
+                <lastmod>2019-02-22</lastmod>
+            
+        </url>
+    
+        <url>
+            <loc>http%3A//127.0.0.1%3A1111/blog/main/</loc>
             
                 <lastmod>2018-06-18</lastmod>
             
         </url>
     
         <url>
-            <loc>https://gatowololo.github.io/blog/ptraceintro/</loc>
+            <loc>http%3A//127.0.0.1%3A1111/blog/ptraceintro/</loc>
             
                 <lastmod>2018-06-19</lastmod>
             
         </url>
     
-    
         <url>
-            <loc>https://gatowololo.github.io/</loc>
+            <loc>http%3A//127.0.0.1%3A1111/blog/rustfutures/</loc>
+            
+                <lastmod>2019-05-29</lastmod>
+            
         </url>
-    
     
 </urlset>

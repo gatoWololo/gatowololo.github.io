@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Omar</title>
+
+      <!-- CSS -->
+      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;print.css" media="print">
+      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;poole.css">
+      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;hyde.css">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+      
+
+      
+      
+    </head>
+
+    <body class="theme-base-08 ">
+        
+            <div class="sidebar">
+                <div class="container sidebar-sticky">
+                    <div class="sidebar-about">
+                        
+                            <a href="http:&#x2F;&#x2F;127.0.0.1:1111"><h1>Omar</h1></a>
+                            
+                            <p class="lead">Does your programming language spark joy?</p>
+                            
+                        
+                    </div>
+
+                    <ul class="sidebar-nav">
+                        
+                        
+                        <li><a href="&#x2F;">About Me</a></li>
+                        
+                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
+                        
+                        <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github Page</a></li>
+                        
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div class="content container">
+            
+<div class="post">
+  <h1 class="post-title">Implement your own Rust: Future, Reactor, Executor, And More (For beginners, by beginners)</h1>
+  <span class="post-date"> Last updated: 2019-05-29</span>
+  <h1 id="preface-and-goals">Preface and Goals</h1>
+<p>I am by no means a expert on Rust Futures. This is just what I learned trying to implement a Future for my use-case. Specifically, we will see how to use Rust's latest<sup class="footnote-reference"><a href="#1">1</a></sup> future API to implement our own reactor and executor (No Tokio or Mio here!). In this blog I attempt to provide resources, history of futures, and a working implementation. Including the upcoming <strong>async</strong> and <strong>await</strong> syntax.</p>
+<h1 id="difficulties-learning-futures">Difficulties Learning Futures</h1>
+<p>Like many other Rust developers on <em>the internet</em>, I had a general idea of what futures are and their purpose in Rust. However, when trying to grasp the implementation details, or implement your own future, finding information on the internet is quite frustrating. Specifically, futures are still very much in flux, so people have held off from creating documentation that might soon be outdated. Existing <a href="http://127.0.0.1:1111/blog/rustfutures/#r1">[1]</a> blogs were outdated with messages like &quot;This document is now out of date. I recommend learning about Rust futures another way.&quot; . These outdated blogs may still be useful! But starting with no experience with futures, it was hard to tell apart the useful from outdated. The biggest challenge for the curious: it is <em>hard</em> to find resources that explain futures without using Tokio or Mio.</p>
+<h1 id="assumptions-and-goals">Assumptions and Goals</h1>
+<p>This post assumes intermediate Rust knowledge (e.g <code>impl trait</code>, <code>associated types</code>, <code>closures</code> , etc) and a high level understanding of futures and async IO. For the uninitialized, I found Snoyman's blog <a href="http://127.0.0.1:1111/blog/rustfutures/#r2">[2]</a> post quite helpful.</p>
+<p>The full implementation we will develop in this post can found here <a href="http://127.0.0.1:1111/blog/rustfutures/#r3">[3]</a>.</p>
+<p>You do not need any systems programming knowledge even though I'll be implementing a future and runtime for waiting on child exit events.</p>
+<h1 id="background">Background</h1>
+<p>For my current research project we're interested in implementing handlers for Linux ptrace events. We want to have a coroutine-style program structure: where we have one coroutine handler per process/thread we are tracing. A big design constraint is that ptrace is not very friendly to threaded executions, that is you cannot (easily) have a multi-threaded tracer.</p>
+<p>Instead, we want to have all our coroutines live in the same main process (thread), and merely &quot;stack switch&quot; between our futures.</p>
+<p>We will be implementing a simpler example here, where a future may wait on a child exit event.</p>
+<h1 id="existing-resources">Existing Resources</h1>
+<p>I found the following resources invaluable when learning the finer details of futures. You don't have to read all these, as I will (attempt) to  go over everything you need to know to get started with futures.</p>
+<p>Farenheit <a href="http://127.0.0.1:1111/blog/rustfutures/#r4">[4]</a> has the same goal as this blog post (no tokio or mio). I used Farenheit as my main blueprint with some changes.</p>
+<p>The Rust Async Book <a href="http://127.0.0.1:1111/blog/rustfutures/#r5">[5]</a> is still in the works, I found their chapter two: &quot;Under the Hood: Executing Futures and Tasks&quot; most helpful.</p>
+<p>The embedded systems executor series <a href="http://127.0.0.1:1111/blog/rustfutures/#r6">[6]</a> was very informative.</p>
+<p>Tokio's docs <a href="http://127.0.0.1:1111/blog/rustfutures/#r7">[7]</a><a href="http://127.0.0.1:1111/blog/rustfutures/#r8">[8]</a> have a lot of useful information.</p>
+<p>The <em>Understanding the Waker</em> series <a href="http://127.0.0.1:1111/blog/rustfutures/#r9">[9]</a> from the source itself.</p>
+<p>TODO Add Local Executor (Naive, loop on all futures)</p>
+<p>Here <a href="http://127.0.0.1:1111/blog/rustfutures/#r10">[10]</a><a href="http://127.0.0.1:1111/blog/rustfutures/#r11">[11]</a> are other confused souls like myself, which helped me piece together part of the story.</p>
+<h1 id="background-terminology">Background Terminology</h1>
+<p>There are a lot of terms used around futures. Many blogs and documentation expect the reader to already know what they are. I tried to give definition here. All the details will come later!</p>
+<ul>
+<li>Future: represents a computation or value that is not yet available, like a closure, declaring a future does not execute it.</li>
+<li>Task: the runtime instantiation of a future. The actual computation being executed.</li>
+<li>Executor: responsible for running and scheduling our tasks.</li>
+<li>Reactor: the driver for the IO, usually by communicating with the OS directly through a low-level system call, for Linux this is usually <code>epoll</code>.</li>
+<li>Waker: represents a handle that will inform the executor that a task is ready to be scheduled for running again.</li>
+<li>Polling: polling generally refers to a non-blocking check for some IO resource to see if it is ready.</li>
+</ul>
+<h1 id="getting-started">Getting started</h1>
+<p>With our new terminology we can now talk about exactly why we will implement. When I say &quot;future runtime&quot;, I mean specifically the <em>executor</em> that will schedule our <em>tasks</em>, and the <em>reactor</em> which will do the low-level communication with the OS. We will see how the executor runs the reactor, schedules tasks, and generates wakers. We will also implement a future, i.e we will create our own async computation which we can wait on.</p>
+<h1 id="tokio-and-mio-what-are-they">Tokio and Mio (What are they?)</h1>
+<p>Tokio<a href="http://127.0.0.1:1111/blog/rustfutures/#r12">[12]</a> is a futures framework/runtime as it provides the executor as well as the futures for many asynchronous tasks. Tokyo defers the work of doing the low-level IO with the OS to Mio <a href="http://127.0.0.1:1111/blog/rustfutures/#r13">[13]</a>. In Linux, Mio runs an <code>epoll</code> loop to poll for events. The previous description is an understatement: both libraries do <em>a lot</em> and I don't want to sell them short. Similarly, due to the complexity, it was not obvious to me if they could fit our use-case, most examples I found in the Tokio docs had to do with networks and severs. Lastly, our team hesitated to introduce such heavy weight dependencies into our project.</p>
+<h1 id="our-first-piece-of-rust-code-what-is-a-future">Our First Piece of Rust Code: What is a Future?</h1>
+<p>A future is simply any type implements the future trait<a href="http://127.0.0.1:1111/blog/rustfutures/#r14">[14]</a>.</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">trait </span><span style="color:#657b83;">Future {
+</span><span style="color:#268bd2;">type </span><span style="color:#657b83;">Output;
+    </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">poll</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">: Pin&lt;</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">Self</span><span style="color:#657b83;">&gt;, </span><span style="color:#268bd2;">cx</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;mut</span><span style="color:#657b83;"> Context) -&gt; Poll&lt;</span><span style="color:#268bd2;">Self::</span><span style="color:#657b83;">Output&gt;;
+}
+</span></pre><h2 id="the-output-associated-type">The <code>Output</code> Associated Type</h2>
+<p><code>Output</code>, aptly named, represents the type our future will produce. Our future for waiting on child exiting <code>Output</code> will be a Nix <a href="http://127.0.0.1:1111/blog/rustfutures/#r15">[15]</a> <code>WaitStatus</code> <a href="http://127.0.0.1:1111/blog/rustfutures/#r16">[16]</a>.</p>
+<h2 id="the-poll-method">The <code>poll</code> Method</h2>
+<p><code>poll</code> is the one method which we have to implement for our future. There is a lot to unpack in the type signature, but it also provides a lot of information (types FTW!):</p>
+<p>Notice the <code>self</code> argument has type <code>Pin&lt;&amp;mut Self&gt;</code> (instead of regular old <code>&amp;mut Self</code>). This was my first time seeing an arbitrary self type <a href="http://127.0.0.1:1111/blog/rustfutures/#r17">[17]</a>. That is we cannot simply call <code>myFuture.poll(...)</code>, unless our future is wrapped in a Pin <em>and</em> the data inside is a mutable reference.</p>
+<p><code>Pin</code> is magical and mysterious, I defer <code>Pin</code> details to the documentation <a href="http://127.0.0.1:1111/blog/rustfutures/#r18">[18]</a>. However, a one sentence summary quoting the docs: &quot;A <code>Pin&lt;P&gt;</code> ensures that the pointee of any pointer type <code>P</code> has a stable location in memory, meaning it cannot be moved elsewhere and its memory cannot be deallocated until it gets dropped&quot;. More information on the API design of Pin can be found here <a href="http://127.0.0.1:1111/blog/rustfutures/#r19">[19]</a>. Why do Rust Futures need to be pinned? Well it's complicated: The idea is that in the implementation details, futures end up having some self-referential data, Rust lifetime checker generally does not like this. <code>Pin</code> therefore asks as a guarantee that the future will not be moved/dropped. The master <strong>@withoutboats</strong> has a throughout blog post series <a href="http://127.0.0.1:1111/blog/rustfutures/#r20">[20]</a> describing the problem in detail. As an implementor of the <code>Future</code> trait, this is not as important. When implementing the executor and reactor, we have to care.</p>
+<p>We will go into details about the <code>Context</code> later.</p>
+<p>The return type <code>Poll&lt;Self::Output&gt;</code> is fairly straightforward:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">enum </span><span style="color:#657b83;">Poll&lt;T&gt; {
+    Ready(T),
+    Pending,
+}
+</span></pre>
+<p>It either returns the data if it's ready. Or simply informs us that it is still waiting. Question! Who <em>exactly</em> is &quot;us&quot; in the last sentence? It is the exectutor! Which will be calling the <code>poll</code> method directly on the future.</p>
+<h1 id="implementing-future-first-try">Implementing Future, First Try</h1>
+<p>We will start with a simple future, which is <strong>not</strong> actually what we want, but it's a first good step. We will define our own type <code>WaitStatusEvent</code> which will implement future:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#93a1a1;">/// Future representing calling waitpid() on a pid.
+</span><span style="color:#859900;">pub </span><span style="color:#268bd2;">struct </span><span style="color:#657b83;">WaitStatusEvent {
+    </span><span style="color:#93a1a1;">/// Pid we&#39;re waiting on.
+    </span><span style="color:#859900;">pub </span><span style="color:#268bd2;">pid</span><span style="color:#657b83;">: Pid,
+}
+
+</span><span style="color:#268bd2;">impl </span><span style="color:#657b83;">Future </span><span style="color:#859900;">for </span><span style="color:#657b83;">WaitStatusEvent {
+    </span><span style="color:#93a1a1;">/// Produces a WaitStatus when done.
+    </span><span style="color:#268bd2;">type </span><span style="color:#657b83;">Output </span><span style="color:#859900;">=</span><span style="color:#657b83;"> WaitStatus;
+
+    </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">poll</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">: Pin&lt;</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">Self</span><span style="color:#657b83;">&gt;, </span><span style="color:#268bd2;">cx</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;mut</span><span style="color:#657b83;"> Context) -&gt; Poll&lt;</span><span style="color:#268bd2;">Self::</span><span style="color:#657b83;">Output&gt; {
+
+        </span><span style="color:#859900;">match waitpid</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">.pid, </span><span style="color:#859900;">Some</span><span style="color:#657b83;">(WaitPidFlag::</span><span style="color:#cb4b16;">WNOHANG</span><span style="color:#657b83;">)).
+          </span><span style="color:#859900;">expect</span><span style="color:#657b83;">(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">Unable to waitpid from poll</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">) {
+            WaitStatus::StillAlive </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">{
+                Poll::Pending
+            }
+            w </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">Poll::Ready(w),
+        }
+    }
+}
+</span></pre>
+<p>The <code>waitpid()</code> system call <a href="http://127.0.0.1:1111/blog/rustfutures/#r21">[21]</a> takes a <code>Pid</code> and blocks until that process' status has changed. This is a <em>key</em> difference between traditional blocking IO and asynchronous IO: we should not block on an event. Therefore we use the <code>WaitPidFlag::WNOHANG</code> <em>with no hang</em> flag. This turns <code>waitpid</code> from a blocking call to polling. In general, <strong>your poll implementation should not block</strong> and should return quickly. Otherwise, other tasks sharing the same thread will be blocked as well.</p>
+<p>The idea of polling is very general. For example, we can poll on sockets to see if data is available from network, or we can wait for a timer to run out, or in our example we will wait for a child process to exit. The method or IO system call needed for polling is very much case-specific<sup class="footnote-reference"><a href="#2">2</a></sup>.</p>
+<h1 id="async-and-await">Async and await.</h1>
+<p>We can now write a function which uses our future:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#268bd2;">fn </span><span style="color:#b58900;">wait_for_child</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">pid</span><span style="color:#657b83;">: Pid) -&gt; impl Future&lt;Output=WaitStatus&gt; {
+    </span><span style="color:#268bd2;">let</span><span style="color:#657b83;"> child </span><span style="color:#859900;">=</span><span style="color:#657b83;"> WaitStatusEvent { pid };
+    async {
+        </span><span style="color:#268bd2;">let</span><span style="color:#657b83;"> status </span><span style="color:#859900;">=</span><span style="color:#657b83;"> child.await;
+        println!(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">Return Value </span><span style="color:#cb4b16;">{:?}</span><span style="color:#2aa198;">!</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">, status);
+        status
+    }
+}
+</span></pre>
+<p>Here we see the use of Rust's new <code>.await</code> and <code>async</code> syntax for working ergonomically with futures. <code>.await</code> acts like a <em>yield point</em>. In <code>child.await</code> we will implicitly call <code>poll</code>. If <code>poll</code> returns with <code>Ready(WaitStatus)</code> we continue, executing this function. If <code>poll</code> returns <code>Pending</code> the function <code>yields</code> execution back to the executor<sup class="footnote-reference"><a href="#3">3</a></sup>.</p>
+<p>We can <em>only</em> call <code>.await</code> inside a <code>async</code> block. Async blocks implicitly create a future which we see as the return type of this function. Notice <code>wait_for_child</code> return a anonymous type implementing <code>Future&lt;_&gt;</code> as its return type.</p>
+<p>We can use <code>async</code> at the function level as well!</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">async </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">wait_for_child</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">pid</span><span style="color:#657b83;">: Pid) -&gt; WaitStatus {
+    </span><span style="color:#268bd2;">let</span><span style="color:#657b83;"> child </span><span style="color:#859900;">=</span><span style="color:#657b83;"> WaitStatusEvent { pid };
+    </span><span style="color:#268bd2;">let</span><span style="color:#657b83;"> status </span><span style="color:#859900;">=</span><span style="color:#657b83;"> child.await;
+    println!(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">Return Value </span><span style="color:#cb4b16;">{:?}</span><span style="color:#2aa198;">!</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">, status);
+    status
+}
+</span></pre>
+<p>Now all mentions of <code>Future&lt;_&gt;</code> are gone from our function signature. This gives us insight into the compiler transformation that <code>async</code> performs. It is useful to remember that <strong>async functions are returning a <code>-&gt; impl Future&lt;_&gt;</code>.</strong> This means the entire function <code>wait_for_child</code> <em>is</em> a future. In general we build bigger futures out of smaller futures, the future executes its code until a <code>.await</code> operation where we may yield execution.</p>
+<h1 id="calling-futures">Calling Futures.</h1>
+<p>Great let's create a child process and call our future!</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#268bd2;">fn </span><span style="color:#b58900;">main</span><span style="color:#657b83;">() -&gt; nix::Result&lt;()&gt; {
+    </span><span style="color:#859900;">match fork</span><span style="color:#657b83;">()</span><span style="color:#859900;">? </span><span style="color:#657b83;">{
+        ForkResult::Parent { child: child } </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">{
+            </span><span style="color:#859900;">wait_for_child</span><span style="color:#657b83;">(child);
+        }
+        ForkResult::Child </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">{
+            nix::unistd::sleep(</span><span style="color:#6c71c4;">1</span><span style="color:#657b83;">);
+            println!(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">Child done!</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">);
+        }
+    }
+    </span><span style="color:#859900;">Ok</span><span style="color:#657b83;">(())
+}
+</span></pre>
+<p>The child waits one second and exits. The parent calls our async <code>wait_for_child()</code>. Neat, it compiles! But this <strong>does not</strong> do what we want:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">warning: unused implementer of `core::future::future::Future` that must be used
+  </span><span style="color:#859900;">-</span><span style="color:#657b83;">-&gt; src</span><span style="color:#859900;">/</span><span style="color:#657b83;">main.rs:</span><span style="color:#6c71c4;">24</span><span style="color:#657b83;">:</span><span style="color:#6c71c4;">13
+   </span><span style="color:#859900;">|
+</span><span style="color:#6c71c4;">24 </span><span style="color:#859900;">|             wait_for_child</span><span style="color:#657b83;">(child);
+   |             ^^^^^^^^^^^^^^^^^^^^^^
+   </span><span style="color:#859900;">|
+   =</span><span style="color:#657b83;"> note: #[</span><span style="color:#268bd2;">warn</span><span style="color:#657b83;">(unused_must_use)] on by default
+   </span><span style="color:#859900;">=</span><span style="color:#657b83;"> note: futures </span><span style="background-color:#ec9489;color:#657b83;">do</span><span style="color:#657b83;"> nothing unless you `.await` or poll them
+</span></pre>
+<p>So this &quot;do nothing&quot;... We cannot call <code>.await</code> as the error suggests:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">error[E0728]: `await` is only allowed inside `async` functions and blocks
+  --&gt; src/main.rs:24:13
+   |
+14 | fn main() -&gt; nix::Result&lt;()&gt; {
+   |    ---- this is not `async`
+...
+24 |             wait_for_child(child).await;
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ only allowed inside `async` functions and blocks
+</span></pre>
+<p>Let's go down the rabbit hole and make <code>main()</code> async?</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">error[</span><span style="color:#cb4b16;">E0277</span><span style="color:#657b83;">]: `main` has invalid </span><span style="color:#859900;">return </span><span style="color:#268bd2;">type</span><span style="color:#657b83;"> `</span><span style="color:#268bd2;">impl </span><span style="color:#657b83;">core::future::future::Future`
+  --&gt; src/main.rs:14:20
+   |
+14 | async fn main() -&gt; nix::Result&lt;()&gt; {
+   |                    ^^^^^^^^^^^^^^^ `main` can only return types that implement `std::process::Termination`
+   </span><span style="color:#859900;">|
+   =</span><span style="color:#657b83;"> help: consider using `()`, or a `</span><span style="color:#859900;">Result</span><span style="color:#657b83;">`
+</span></pre>
+<p>The compiler hates it. We have reached the very top of the program, and we cannot add any more asyncs or awaits. What now? Well this is where the executor comes in! Instead of <code>wait_for_child(child);</code> or <code>wait_for_child(child).await;</code>, we will pass this function into our executor.</p>
+<h1 id="implementing-an-executor">Implementing an Executor</h1>
+<p>Conceptually, the executor has a few jobs.</p>
+<ul>
+<li>It accepts new futures to spawn as tasks.</li>
+<li>It keeps track of all tasks, scheduling those which events have arrived.</li>
+</ul>
+<p>Given a future <code>f: impl Future&lt;Ouput=T&gt;</code> calling its <code>poll()</code> method will automatically start executing the future. Any calls to <code>.await</code> will <em>actually</em> start the <code>poll()</code> method as defined by us. Adding some print statements to our functions let's us observe this behavior:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">async </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">wait_for_child</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">pid</span><span style="color:#657b83;">: Pid) -&gt; WaitStatus {
+    println!(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">Beginning of async function.</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">);
+    </span><span style="color:#859900;">...
+</span><span style="color:#657b83;">}
+
+</span><span style="color:#268bd2;">impl </span><span style="color:#657b83;">Future </span><span style="color:#859900;">for </span><span style="color:#657b83;">PtraceEvent {
+    </span><span style="color:#268bd2;">type </span><span style="color:#657b83;">Output </span><span style="color:#859900;">=</span><span style="color:#657b83;"> WaitStatus;
+
+    </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">poll</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">: Pin&lt;</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">Self</span><span style="color:#657b83;">&gt;, </span><span style="color:#268bd2;">cx</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;mut</span><span style="color:#657b83;"> Context) -&gt; Poll&lt;</span><span style="color:#268bd2;">Self::</span><span style="color:#657b83;">Output&gt; {
+        println!(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">future polling!</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">);
+        </span><span style="color:#859900;">...
+    </span><span style="color:#657b83;">}
+}
+</span></pre>
+<p>We see the following sequence of events:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">New future added! // From executor function (comming soon!)
+Beginning of async function.
+future polling!
+New future returned Pending!
+</span></pre>
+<p>We define our executor  as follows:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">struct </span><span style="color:#657b83;">WaitidExecutor&lt;</span><span style="color:#859900;">&#39;a</span><span style="color:#657b83;">&gt; {
+  ... </span><span style="color:#93a1a1;">// Ignore fields for now.
+</span><span style="color:#657b83;">}
+</span></pre>
+<p>Fields, and method will come later, but note our executor doesn't need to implement any fancy traits.</p>
+<h2 id="adding-futures-to-our-executor">Adding Futures to Our Executor</h2>
+<p>We define a method to add futures to our executor for running:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">add_future</span><span style="color:#657b83;">&lt;F&gt;(</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">added_future</span><span style="color:#657b83;">: F)
+</span><span style="color:#859900;">where</span><span style="color:#657b83;">
+    F: Future&lt;Output = WaitStatus&gt; + Send + </span><span style="color:#859900;">&#39;a</span><span style="color:#657b83;">,
+{
+   </span><span style="color:#859900;">...
+</span><span style="color:#657b83;">}
+</span></pre>
+<p>(<strong>Note:</strong> This is probably not the best function signature to add a futures. As Rust will specialize the function for every concrete type used for <code>F</code>. A dynamic trait object is probably more appropriate here.)</p>
+<p>The idea is simple: we <em>poll</em> the <code>added_future</code> future once. If polling returns <code>Poll::Pending</code>, we add our future to a queue and try again later, otherwise it runs to completion.</p>
+<h3 id="calling-poll">Calling poll(...)</h3>
+<p>We want to call <code>fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context) -&gt; Poll&lt;Self::Output&gt;</code>. So first we need to wrap our future in a <code>Pin</code>. However, calling Pin's <code>fn new(pointer: P) -&gt; Pin&lt;P&gt;</code> <a href="http://127.0.0.1:1111/blog/rustfutures/#r22">[22]</a> does not work:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">error[</span><span style="color:#cb4b16;">E0277</span><span style="color:#657b83;">]: the </span><span style="color:#268bd2;">trait </span><span style="color:#657b83;">bound `F: std::ops::Deref` is not satisfied
+  --&gt; src/executor.rs:89:9
+   |
+89 |         Pin::new(future);
+   |         ^^^^^^^^ the trait `std::ops::Deref` is not implemented for `F`
+   |
+   = help: consider adding a `where F: std::ops::Deref` bound
+   = note: required by `std::pin::Pin::&lt;P&gt;::new`
+</span></pre>
+<p>I don't understand pinning in detail, however it seems that pinning only makes sense for types that act like pointers. Thus, we can only pin types that implements <code>Deref</code>, the easiest way I found to create a pinned future is using the (TODO hyperlink) <code>Box</code> method <code>Box::pin()</code>:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#93a1a1;">// Pin it, and box it up for storing.
+</span><span style="color:#268bd2;">let </span><span style="color:#859900;">mut</span><span style="color:#657b83;"> added_future: BoxFuture&lt;</span><span style="color:#859900;">&#39;a</span><span style="color:#657b83;">, WaitStatus&gt; </span><span style="color:#859900;">= Box</span><span style="color:#657b83;">::pin(added_future);
+</span></pre>
+<p>Where <code>BoxFuture</code> is defined (TODO add hyperlink) as:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#93a1a1;">/// An owned dynamically typed Future for use in cases where you can&#39;t statically type your result or need to add some indirection.
+</span><span style="color:#268bd2;">type </span><span style="color:#657b83;">BoxFuture</span><span style="color:#859900;">&lt;&#39;a</span><span style="color:#657b83;">, T</span><span style="color:#859900;">&gt; = </span><span style="color:#657b83;">Pin&lt;Box&lt;dyn Future&lt;Output = T&gt; </span><span style="color:#859900;">+ &#39;a +</span><span style="color:#657b83;"> Send&gt;&gt;;
+</span></pre>
+<p>That is, a pinned, boxed (heap allocated), <code>Future</code> trait object, of <code>Output</code> type <code>T</code> with lifetime <code>'a</code>, which implements <code>Send</code> (safe to send across threads), phew!</p>
+<p>We are almost there... but not quite. Calling <code>poll(...)</code> on our <code>added_future: BoxFuture&lt;'a, WaitStatus&gt;</code> still won't work. <code>poll</code> demands the calling object be of the form: <code>self: Pin&lt;&amp;mut Self&gt;</code>. Notice the mutable reference <code>&amp;mut</code> is &quot;inside&quot; the <code>Pin&lt;...&gt;</code>. The <code>Pin</code> API has the exact right method (TODO add hyperlink) for our purposes:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">as_mut</span><span style="color:#657b83;">(</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">) -&gt; Pin&lt;</span><span style="color:#859900;">&amp;mut </span><span style="color:#657b83;">&lt;P </span><span style="color:#859900;">as</span><span style="color:#657b83;"> Deref&gt;::Target&gt;
+</span></pre>
+<p>And finally we have the right type set up to call <code>poll</code>!</p>
+<h3 id="creating-a-context-and-waker">Creating a Context and Waker</h3>
+<p><code>poll</code> takes an argument <code>cx: &amp;mut Context</code>. Checking out <code>Context</code> <a href="http://127.0.0.1:1111/blog/rustfutures/#r23">[23]</a>. We see a <code>Context</code> just holds a reference to the waker via the method <code>pub fn waker(&amp;self) -&gt; &amp;'a Waker</code>. In the future <code>Context</code> may expand to include other things.</p>
+<p>The only way I have to create a <code>Context</code> is via the associated function:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">from_waker</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">waker</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;&#39;a</span><span style="color:#657b83;"> Waker) -&gt; Context&lt;</span><span style="color:#859900;">&#39;a</span><span style="color:#657b83;">&gt;
+</span></pre>
+<p>TODO add hyperlinks!
+So first we need a <code>Waker</code>. The only way I found to create a <code>Waker</code> is by implementing <code>ArcWake</code> and calling <code>fn into_waker(self: Arc&lt;Self&gt;) -&gt; Waker</code>. Roughly, we know a waker is in charge of informing the executor when a task is ready to be polled again, but up to this point. It is not clear why we need this. So we will implement a &quot;null&quot; waker for now:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#268bd2;">struct </span><span style="color:#657b83;">WaitidWaker {
+    </span><span style="color:#93a1a1;">// none for now...
+</span><span style="color:#657b83;">}
+
+</span><span style="color:#268bd2;">impl </span><span style="color:#657b83;">ArcWake </span><span style="color:#859900;">for </span><span style="color:#657b83;">WaitidWaker {
+    </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">wake_by_ref</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">arc_self</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;</span><span style="color:#657b83;">Arc&lt;</span><span style="color:#268bd2;">Self</span><span style="color:#657b83;">&gt;) {
+      </span><span style="color:#93a1a1;">// blank!
+    </span><span style="color:#657b83;">}
+}
+</span></pre><h3 id="putting-it-all-together">Putting It All Together</h3>
+<p>We have now a fully working function to add futures:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">add_future</span><span style="color:#657b83;">&lt;F&gt;(</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">added_future</span><span style="color:#657b83;">: F)
+ </span><span style="color:#859900;">where</span><span style="color:#657b83;">
+     F: Future&lt;Output = WaitStatus&gt; + Send + </span><span style="color:#859900;">&#39;a</span><span style="color:#657b83;">,
+ {
+     </span><span style="color:#93a1a1;">// Create waker.
+     </span><span style="color:#268bd2;">let</span><span style="color:#657b83;"> task_id </span><span style="color:#859900;">= </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">.</span><span style="color:#859900;">get_next_task_id</span><span style="color:#657b83;">();
+     </span><span style="color:#268bd2;">let</span><span style="color:#657b83;"> waker </span><span style="color:#859900;">= </span><span style="color:#657b83;">Arc::new(WaitidWaker { }).</span><span style="color:#859900;">into_waker</span><span style="color:#657b83;">();
+
+     </span><span style="color:#93a1a1;">// Pin it, and box it up for storing.
+     </span><span style="color:#268bd2;">let </span><span style="color:#859900;">mut</span><span style="color:#657b83;"> added_future: BoxFuture&lt;</span><span style="color:#859900;">&#39;a</span><span style="color:#657b83;">, WaitStatus&gt; </span><span style="color:#859900;">= Box</span><span style="color:#657b83;">::pin(added_future);
+
+     </span><span style="color:#859900;">match</span><span style="color:#657b83;"> added_future.</span><span style="color:#859900;">as_mut</span><span style="color:#657b83;">().</span><span style="color:#859900;">poll</span><span style="color:#657b83;">(</span><span style="color:#859900;">&amp;mut </span><span style="color:#657b83;">Context::from_waker(</span><span style="color:#859900;">&amp;</span><span style="color:#657b83;">waker)) {
+         Poll::Pending </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">{
+             println!(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">New future returned Pending!</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">);
+             </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">.waiting_tasks.</span><span style="color:#859900;">insert</span><span style="color:#657b83;">(task_id, added_future);
+         }
+         Poll::Ready(</span><span style="color:#859900;">_</span><span style="color:#657b83;">) </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">{
+             </span><span style="color:#93a1a1;">// Task is done, no need to add it to queue.
+             // get dropped
+         </span><span style="color:#657b83;">}
+     }
+}
+</span></pre>
+<p>Where <code>waiting_tasks: BTreeMap&lt;TaskId, BoxFuture&lt;'a, WaitStatus&gt;&gt;</code>, and <code>TaskId</code> is a unique <code>u32</code> assigned to every task. So all tasks that are still <em>pending</em> on some IO event go to our <code>waiting_tasks</code> queue.</p>
+<h2 id="running-our-queued-futures">Running our queued futures.</h2>
+<p>Next we create a function to run all our queued futures to completion:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">run_all</span><span style="color:#657b83;">(</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">) {
+  </span><span style="color:#859900;">...
+</span><span style="color:#657b83;">}
+</span></pre>
+<p>The calling thread will block on <code>run_all</code> until all added futures finish<sup class="footnote-reference"><a href="#4">4</a></sup>. A naive implementation could simply iterate over our <code>waiting_tasks</code>, polling all futures seeing if any can make progress. This type of busy waiting is unnecessary, we can do better! This is where the <em>reactor</em> comes into play. Instead of busy waiting by looping on <code>poll</code>, the executor will call reactor to block until an event comes from any future</p>
+<h1 id="the-polling-registering-blocking-waking-loop">The Polling, registering, blocking, waking, loop</h1>
+<p>Let's have a look at the high level overview of how our entire future infratructure makes progress:</p>
+<ol>
+<li>Futures are added to the executor via <code>add_future</code>.</li>
+<li><code>add_future</code> calls the <code>poll</code> method on a future.</li>
+<li>Inside a <code>poll</code> future registers it's IO event with the reactor.</li>
+<li>Futures that return Pending are queued away.</li>
+<li>The executor calls the reactor to block until IO events arive.
+TODO Clean Up!</li>
+</ol>
+<h3 id="reactor-waitid">Reactor: Waitid</h3>
+<p><code>waitid</code> (TODO hyperlink) is a Linux system call for blocking on events from a PID. We use <code>waitid</code> with <code>P_ALL</code> to wait for events for any PID. The only way we have to execute a future is by calling its <code>poll</code> method. Recall the <code>poll</code> implementation for <code>WaitStatusEvent</code> calls <code>waitpid(self.pid, , Some(WaitPidFlag::WNOHANG))</code>. Importantly, <code>waitpid</code> <strong>consumes the event</strong> as a side effect of returning successfully. <code>WaitStatusEvent::poll()</code> must do the consuming. So to avoid our reactor consuming the event we use <code>WNOWAIT</code> &quot;Leave the child in a waitable state; a later wait call can be  used  to  again retrieve the child status information.&quot; For this reason the reactor's waiting method should be <em>side effect free</em>. As an example, consider a <code>SocketEvent</code> future, its reactor would check if the socket is available for reading, but <code>SocketEvent::poll</code> would do the (side effect computation:) <em>actual</em> reading.</p>
+<h3 id="blocking-executor">Blocking Executor</h3>
+<p>We can now properly implement <code>pub fn run_all(&amp;mut self)</code>. The implementation gets bogged down with low level details. So I present a high level overview here:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">run_all</span><span style="color:#657b83;">(</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">) {
+    </span><span style="color:#93a1a1;">// Keep looping until all waiting tasks are done.
+    </span><span style="color:#859900;">loop </span><span style="color:#657b83;">{
+        reactor::wait_for_event();
+        </span><span style="color:#93a1a1;">// Use task_id to `poll` correct future.
+        </span><span style="color:#268bd2;">let</span><span style="color:#657b83;"> task_id </span><span style="color:#859900;">= ???</span><span style="color:#657b83;">;
+
+        </span><span style="color:#859900;">match </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">.waiting_tasks.</span><span style="color:#859900;">entry</span><span style="color:#657b83;">(task_id) {
+            Entry::Occupied(</span><span style="color:#859900;">mut</span><span style="color:#657b83;"> task) </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">{
+                </span><span style="color:#93a1a1;">// ...
+                </span><span style="color:#859900;">match</span><span style="color:#657b83;"> task.</span><span style="color:#859900;">get_mut</span><span style="color:#657b83;">().</span><span style="color:#859900;">as_mut</span><span style="color:#657b83;">().</span><span style="color:#859900;">poll</span><span style="color:#657b83;">(context) {
+                    </span><span style="color:#93a1a1;">// Made progress but still pending.
+                    </span><span style="color:#657b83;">Poll::Pending </span><span style="color:#859900;">=&gt; continue</span><span style="color:#657b83;">,
+                    </span><span style="color:#93a1a1;">// All done!
+                    </span><span style="color:#657b83;">Poll::Ready(</span><span style="color:#859900;">_</span><span style="color:#657b83;">) </span><span style="color:#859900;">=&gt;</span><span style="color:#657b83;"> task.</span><span style="color:#859900;">remove_entry</span><span style="color:#657b83;">(),
+                }
+            }
+            Entry::Vacant(</span><span style="color:#859900;">_</span><span style="color:#657b83;">) </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">{
+                panic!(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">No task waiting for this PID</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">);
+            }
+        }
+    }
+}
+</span></pre>
+<p>The executor calls the reactor's <code>fn wait_for_event()</code>, which blocks until an event is ready. After calling <code>wait_for_event</code>, how does the executor know which future (represented by a <code>task_id</code>) is ready to run next?</p>
+<p>Observe <code>wait_for_event()</code> neither takes or returns any arguments. This is weird, but on purpose. One of the features of futures is the <strong>decoupling</strong> of executor and reactor: we can use different executors with different reactors and vice versa (e.g. use a single-threaded executor versus a multithreaded one).</p>
+<p>Even with our partial implementation we already see the decoupling: Our executor makes no mention of <code>waitid</code>, <code>waitpid</code>, or child event futures. <em>It is completely future agnostic</em>. Similarly, as we are about to see, the reactor knows nothing about how the executor is implemented.</p>
+<h1 id="implementing-a-reactor">Implementing a Reactor</h1>
+<p>While the executor and reactor know nothing of each other, the reactor and future are intimately tied. Which makes sense: the reactor needs to know what IO event a future is waiting on, and how to wait for this event.</p>
+<h2 id="revisiting-poll">Revisiting <code>poll()</code></h2>
+<p>Let's implement a reactor aware <code>poll()</code> for <code>WaitStatusEvent</code>:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#268bd2;">fn </span><span style="color:#b58900;">poll</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">: Pin&lt;</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">Self</span><span style="color:#657b83;">&gt;, </span><span style="color:#268bd2;">cx</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;mut</span><span style="color:#657b83;"> Context) -&gt; Poll&lt;</span><span style="color:#268bd2;">Self::</span><span style="color:#657b83;">Output&gt; {
+    </span><span style="color:#859900;">match waitpid</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">.pid, </span><span style="color:#859900;">Some</span><span style="color:#657b83;">(WaitPidFlag::</span><span style="color:#cb4b16;">WNOHANG</span><span style="color:#657b83;">)).
+        </span><span style="color:#859900;">expect</span><span style="color:#657b83;">(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">Unable to waitpid from poll</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">) {
+            WaitStatus::StillAlive </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">{
+                reactor::register(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">.pid, cx.</span><span style="color:#859900;">waker</span><span style="color:#657b83;">().</span><span style="color:#859900;">clone</span><span style="color:#657b83;">());
+                Poll::Pending
+            }
+            w </span><span style="color:#859900;">=&gt; </span><span style="color:#657b83;">Poll::Ready(w),
+        }
+}
+</span></pre>
+<p>We added but a single line <code>reactor::register(self.pid, cx.waker().clone());</code>. The future informs the reactor that it is waiting on <code>waitpid()</code> events from <code>self.pid</code>, and the future passes the reactor a copy of its waker. Notice the future does nothing with the waker except pass it along to the reactor. The why will become clear soon.</p>
+<h2 id="reactor-implementation">Reactor implementation</h2>
+<p>First and foremost, a reactor blocks for IO events by interacting with the OS (low-level details are changed to make the concept clear):</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#268bd2;">fn </span><span style="color:#b58900;">wait_for_event</span><span style="color:#657b83;">() {
+    </span><span style="color:#93a1a1;">// Block here for actual events to come.
+    </span><span style="color:#268bd2;">let</span><span style="color:#657b83;"> ready_pid </span><span style="color:#859900;">= </span><span style="color:#657b83;">libc::waitid(libc::</span><span style="color:#cb4b16;">P_ALL</span><span style="color:#657b83;">, </span><span style="color:#859900;">...</span><span style="color:#657b83;">, libc::</span><span style="color:#cb4b16;">WNOWAIT </span><span style="color:#859900;">...</span><span style="color:#657b83;">);
+
+    </span><span style="color:#93a1a1;">// Call waker of ready_pid here.
+    </span><span style="color:#cb4b16;">PID_WAKER</span><span style="color:#657b83;">.</span><span style="color:#859900;">with</span><span style="color:#657b83;">(|</span><span style="color:#268bd2;">hashtable</span><span style="color:#657b83;">| {
+        hashtable
+            .</span><span style="color:#859900;">borrow_mut</span><span style="color:#657b83;">()
+            .</span><span style="color:#859900;">get</span><span style="color:#657b83;">(</span><span style="color:#859900;">&amp;</span><span style="color:#657b83;">ready_pid)
+            .</span><span style="color:#859900;">expect</span><span style="color:#657b83;">(</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">No such entry, should have been there.</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">)
+            .</span><span style="color:#859900;">wake_by_ref</span><span style="color:#657b83;">();
+    });
+}
+</span></pre>
+<p>We simply call the <code>wake_by_ref()</code> method of the waker. Which will inform the executor of what future to poll next. Let's take a look at <code>PID_WAKER</code>:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">thread_local! {
+    </span><span style="color:#859900;">pub </span><span style="color:#268bd2;">static </span><span style="color:#cb4b16;">PID_WAKER</span><span style="color:#657b83;">: RefCell&lt;HashMap&lt;Pid, Waker&gt;&gt; </span><span style="color:#859900;">= </span><span style="color:#657b83;">RefCell::new(HashMap::new());
+}
+</span></pre>
+<p>It is simply a <code>HashMap</code> living in TLS from PIDs to wakers. Entries are added to this map via:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#268bd2;">fn </span><span style="color:#b58900;">register</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">pid</span><span style="color:#657b83;">: Pid, </span><span style="color:#268bd2;">waker</span><span style="color:#657b83;">: Waker) {
+    </span><span style="color:#cb4b16;">PID_WAKER</span><span style="color:#657b83;">.</span><span style="color:#859900;">with</span><span style="color:#657b83;">(|</span><span style="color:#268bd2;">pid_waker</span><span style="color:#657b83;">| {
+        pid_waker.</span><span style="color:#859900;">borrow_mut</span><span style="color:#657b83;">().</span><span style="color:#859900;">insert</span><span style="color:#657b83;">(pid, waker);
+    });
+}
+</span></pre>
+<p>Why does <code>PID_WAKER</code> live in TLS? Recall <code>WaitStatusEvent</code> needs to call <code>register()</code> to </p>
+<h1 id="all-about-the-waker">All About the Waker</h1>
+<p>The <code>Waker</code> documentation [TODO] states &quot;A Waker is a handle for waking up a task by notifying its executor that it is ready to be run.&quot; Okay, but how? The documentation on the <code>Waker</code> methods is equally as vague:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#93a1a1;">/// Wake up the task associated with this Waker.
+</span><span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">wake</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">)
+</span></pre>
+<p>Thanks documentation. This is intentionally vague because <em>waking</em> is entirely implementation dependent, and will be different for every executor implementation. For an in depth dive of wakers see <strong>@withoutboats</strong> excellent blog series <a href="http://127.0.0.1:1111/blog/rustfutures/#r9">[9]</a>. However, in general Thread Local State (TSL) TODO REF accessible to both the waker and the executor is used to inform the executor which <code>TaskID</code>(s) should run next.</p>
+<p>So in <code>executor.rs</code> we define:</p>
+<pre style="background-color:#fdf6e3;">
+<span style="color:#657b83;">thread_local! {
+    </span><span style="color:#859900;">pub </span><span style="color:#268bd2;">static </span><span style="color:#cb4b16;">NEXT_TASKID</span><span style="color:#657b83;">: RefCell&lt;TaskId&gt; </span><span style="color:#859900;">= </span><span style="color:#657b83;">RefCell::new(</span><span style="color:#6c71c4;">0</span><span style="color:#657b83;">);
+}
+</span></pre>
+<p>The waker will place </p>
+<p>Our current goal is straightforward: given a PID (returned from <code>waitid</code>) select the correct future from our <code>waiting_tasks: BTreeMap&lt;TaskId, BoxFuture&lt;'a, WaitStatus&gt;&gt;</code> to run. </p>
+<h1 id="lasting-thoughts">Lasting Thoughts</h1>
+<p>As mentioned, this is an <strong>introduction</strong> to these concepts, and I myself am not an expert on futures. Here I list remaining questions and thoughts.</p>
+<ul>
+<li><strong>@withoutboats</strong> mentions on <a href="https://boats.gitlab.io/blog/post/wakers-i/">their Waker API blog</a>,&quot;One of the great things about Rust’s design is that you can combine different executors with different reactors, instead of being tied down to one runtime library for both pieces.&quot; The design presented tightly couples (for the worse), the executor and reactor. It is unclear to me what a refactored, uncoupled design would like.</li>
+<li>I have two &quot;poll twice&quot;</li>
+</ul>
+<h1 id="footnotes">Footnotes</h1>
+<p><sup class="footnote-reference"><a href="#1">1</a></sup> I am using <code>futures-preview = &quot;0.3.0-alpha.16&quot;</code> found <a href="https://github.com/rust-lang-nursery/futures-rs">here</a>. It seems eventually this will become the default std implementation?</p>
+<p><sup class="footnote-reference"><a href="#2">2</a></sup> Linux's <a href="http://man7.org/linux/man-pages/man7/epoll.7.html"><code>epoll</code> system call</a> covers polling on many IO sources, and is therefore general enough to be useful in most cases.</p>
+<p><sup class="footnote-reference"><a href="#3">3</a></sup> Rust futures are implemented as coroutines, for background on Rust coroutines check out <a href="https://github.com/rust-lang/rust/issues/43122">this</a>. See <a href="https://doc.rust-lang.org/beta/unstable-book/language-features/generators.html">generators</a> for a brief introduction to <code>yield</code>.</p>
+<p><sup class="footnote-reference"><a href="#4">4</a></sup> A real implementation probably wants to allow for dynamically adding new futures <em>from</em> running futures, this is certainly a possible extension, but beyond the scope of this tutorial.</p>
+<h2 id="references">References</h2>
+<h4 id="r1">[1] <a href="https://paulkernfeld.com/2018/01/20/future-by-example.html">Future by example</a></h4>
+<h4 id="r2">[2] <a href="https://www.snoyman.com/blog/2018/12/rust-crash-course-07-async-futures-tokio">Async, futures, and tokio - Rust Crash Course lesson 7</a></h4>
+<h4 id="r3">[3] <a href="https://github.com/gatoWololo/RustFutureExample"><em>This</em> blog's code repository</a></h4>
+<h4 id="r4">[4] <a href="https://github.com/polachok/fahrenheit">Farenheit</a></h4>
+<h4 id="r5">[5] <a href="https://rust-lang.github.io/async-book/">Rust Async Book</a></h4>
+<h4 id="r6">[6] <a href="https://josh.robsonchase.com/embedded-executor/">Embedded Executor</a></h4>
+<h4 id="r7">[7] <a href="https://tokio.rs/docs/going-deeper/futures/">Tokio Docs: Going Deeper: futures</a></h4>
+<h4 id="r8">[8] <a href="https://tokio.rs/docs/going-deeper/runtime-model/">Tokio Docs: Runtime Model</a></h4>
+<h4 id="r9">[9] <a href="https://boats.gitlab.io/blog/post/wakers-i/">Wakers</a></h4>
+<h4 id="r10">[10] <a href="https://www.reddit.com/r/rust/comments/anu8w4/futures_03_how_does_waker_and_executor_connect/">Futures 0.3: how does Waker and Executor connect?</a></h4>
+<h4 id="r11">[11] <a href="https://www.reddit.com/r/rust/comments/90g9ln/asyncawaitfuturesexecutor_without_external_crates/">TODO</a></h4>
+<h4 id="r12">[12] <a href="https://tokio.rs/">Tokio</a></h4>
+<h4 id="r13">[13] [Mio]((https://github.com/tokio-rs/mio)</h4>
+<h4 id="r14">[14] <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.16/futures/prelude/trait.Future.html">The future trait</a></h4>
+<h4 id="r15">[15] <a href="https://docs.rs/nix/0.14.1/nix/">Nix Crate</a></h4>
+<h4 id="r16">[16] <a href="https://docs.rs/nix/0.14.1/nix/sys/wait/enum.WaitStatus.html">Wait Status</a></h4>
+<h4 id="r17">[17] <a href="https://github.com/rust-lang/rust/issues/44874">Arbitrary Self Type</a></h4>
+<h4 id="r18">[18] <a href="https://doc.rust-lang.org/std/pin/index.html">Pin Documentation</a></h4>
+<h4 id="r19">[19] <a href="https://github.com/rust-lang/rust/issues/49150">TODO Pin RFC?</a></h4>
+<h4 id="r20">[20] <a href="https://boats.gitlab.io/blog/post/2018-01-25-async-i-self-referential-structs/">Withoutboats: Pin</a></h4>
+<h4 id="r21">[21] <a href="https://docs.rs/nix/0.14.1/nix/sys/wait/fn.waitpid.html">Nix: Waitpid</a></h4>
+<h4 id="r22">[22] <a href="https://doc.rust-lang.org/nightly/std/pin/struct.Pin.html#method.new">Pin::new()</a></h4>
+<h4 id="r23">[23] <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.16/futures/task/struct.Context.html">Futures Context</a></h4>
+<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
+
+</div>
+
+        </div>
+    <script src="/livereload.js?port=1024&mindelay=10"></script></body>
+
+</html>

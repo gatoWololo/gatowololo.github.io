@@ -7,12 +7,12 @@
       <!-- Enable responsiveness on mobile devices-->
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
-      <title>wololo!</title>
+      <title>Omar</title>
 
       <!-- CSS -->
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;print.css" media="print">
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;poole.css">
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;hyde.css">
+      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;print.css" media="print">
+      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;poole.css">
+      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;hyde.css">
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
       
@@ -27,9 +27,9 @@
                 <div class="container sidebar-sticky">
                     <div class="sidebar-about">
                         
-                            <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>wololo!</h1></a>
+                            <a href="http:&#x2F;&#x2F;127.0.0.1:1111"><h1>Omar</h1></a>
                             
-                            <p class="lead">Much ado about programming</p>
+                            <p class="lead">Does your programming language spark joy?</p>
                             
                         
                     </div>
@@ -37,9 +37,7 @@
                     <ul class="sidebar-nav">
                         
                         
-                        <li><a href="&#x2F;about&#x2F;about">Home</a></li>
-                        
-                        <li><a href="&#x2F;about&#x2F;about">About me</a></li>
+                        <li><a href="&#x2F;">About Me</a></li>
                         
                         <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
                         
@@ -56,7 +54,7 @@
 <div class="post">
   <h1 class="post-title">Ptrace and You</h1>
   <span class="post-date"> Last updated: 2018-06-19</span>
-  <h2 id="ptrace">Ptrace & You: A comprehensive overview of ptrace</h2>
+  <h2 id="ptrace-you-a-comprehensive-overview-of-ptrace">Ptrace &amp; You: A comprehensive overview of ptrace</h2>
 <p>Our current project involves heavy use of <code>ptrace</code>. While <code>man 2 ptrace</code> offers
 an in depth technical description, it is very difficult to follow for beginners (hence all
 the introduction to <code>ptrace</code> blogs around). While these blogs helped me get started, I feel
@@ -91,19 +89,19 @@ the kernel allows the stopped <em>tracee</em> to run once more.</p>
 I have not been able to find any report/publication quantifying the overhead of <code>ptrace</code>.
 However, a very rough test, running a simple for loop <em>n</em> times (for a sufficiently
 large <em>n</em>), doing a trivial system call, like <code>getpid()</code>:</p>
-<pre style="background-color:#fdf6e3">
-<span style="background-color:#fdf6e3;color:#cb4b16;">#include </span><span style="background-color:#fdf6e3;color:#839496;">&lt;</span><span style="background-color:#fdf6e3;color:#2aa198;">unistd.h</span><span style="background-color:#fdf6e3;color:#839496;">&gt;
-</span><span style="background-color:#fdf6e3;color:#cb4b16;">#include </span><span style="background-color:#fdf6e3;color:#839496;">&lt;</span><span style="background-color:#fdf6e3;color:#2aa198;">stdio.h</span><span style="background-color:#fdf6e3;color:#839496;">&gt;
-</span><span style="background-color:#fdf6e3;color:#cb4b16;">#include </span><span style="background-color:#fdf6e3;color:#839496;">&lt;</span><span style="background-color:#fdf6e3;color:#2aa198;">stdint.h</span><span style="background-color:#fdf6e3;color:#839496;">&gt;
-</span><span style="background-color:#fdf6e3;color:#cb4b16;">#include </span><span style="background-color:#fdf6e3;color:#839496;">&lt;</span><span style="background-color:#fdf6e3;color:#2aa198;">sys/syscall.h</span><span style="background-color:#fdf6e3;color:#839496;">&gt;
-</span><span style="background-color:#fdf6e3;color:#657b83;">
-</span><span style="background-color:#fdf6e3;color:#268bd2;">int </span><span style="background-color:#fdf6e3;color:#b58900;">main</span><span style="background-color:#fdf6e3;color:#657b83;">(){
-</span><span style="background-color:#fdf6e3;color:#657b83;">  </span><span style="background-color:#fdf6e3;color:#859900;">for</span><span style="background-color:#fdf6e3;color:#657b83;">(</span><span style="background-color:#fdf6e3;color:#268bd2;">int</span><span style="background-color:#fdf6e3;color:#657b83;"> i = </span><span style="background-color:#fdf6e3;color:#6c71c4;">0</span><span style="background-color:#fdf6e3;color:#657b83;">; i &lt; </span><span style="background-color:#fdf6e3;color:#6c71c4;">10000000</span><span style="background-color:#fdf6e3;color:#657b83;">; i++){
-</span><span style="background-color:#fdf6e3;color:#657b83;">    </span><span style="background-color:#fdf6e3;color:#268bd2;">int</span><span style="background-color:#fdf6e3;color:#657b83;"> res = </span><span style="background-color:#fdf6e3;color:#268bd2;">syscall</span><span style="background-color:#fdf6e3;color:#657b83;">(SYS_getpid);
-</span><span style="background-color:#fdf6e3;color:#657b83;">  </span><span style="background-color:#fdf6e3;color:#657b83;">}
-</span><span style="background-color:#fdf6e3;color:#657b83;">
-</span><span style="background-color:#fdf6e3;color:#657b83;">  </span><span style="background-color:#fdf6e3;color:#859900;">return </span><span style="background-color:#fdf6e3;color:#6c71c4;">0</span><span style="background-color:#fdf6e3;color:#657b83;">;
-</span><span style="background-color:#fdf6e3;color:#657b83;">}
+<pre style="background-color:#fdf6e3;">
+<span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">unistd.h</span><span style="color:#839496;">&gt;
+</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">stdio.h</span><span style="color:#839496;">&gt;
+</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">stdint.h</span><span style="color:#839496;">&gt;
+</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">sys/syscall.h</span><span style="color:#839496;">&gt;
+
+</span><span style="color:#268bd2;">int </span><span style="color:#b58900;">main</span><span style="color:#657b83;">(){
+  </span><span style="color:#859900;">for</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">int</span><span style="color:#657b83;"> i = </span><span style="color:#6c71c4;">0</span><span style="color:#657b83;">; i &lt; </span><span style="color:#6c71c4;">10000000</span><span style="color:#657b83;">; i++){
+    </span><span style="color:#268bd2;">int</span><span style="color:#657b83;"> res = </span><span style="color:#268bd2;">syscall</span><span style="color:#657b83;">(SYS_getpid);
+  }
+
+  </span><span style="color:#859900;">return </span><span style="color:#6c71c4;">0</span><span style="color:#657b83;">;
+}
 </span></pre>
 <p>On my laptop, this program takes 0.82 seconds of user time (averaged from 3 runs using the <code>time</code>
 command). While ptraced, it takes about 13.18 seconds, a 15x slowdown. Note this
@@ -120,8 +118,8 @@ overhead comes from. (In a future blog, we will see how using <code>seccomp + bp
 can mitigate this overhead, and the number of context switches).</p>
 <h3 id="using-ptrace">Using ptrace</h3>
 <p>Let's have a look at the <code>ptrace</code> system call API:</p>
-<pre style="background-color:#fdf6e3">
-<span style="background-color:#fdf6e3;color:#268bd2;">long </span><span style="background-color:#fdf6e3;color:#b58900;">ptrace</span><span style="background-color:#fdf6e3;color:#657b83;">(</span><span style="background-color:#fdf6e3;color:#268bd2;">enum</span><span style="background-color:#fdf6e3;color:#657b83;"> __ptrace_request </span><span style="background-color:#fdf6e3;color:#268bd2;">request</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#859900;">pid_t </span><span style="background-color:#fdf6e3;color:#268bd2;">pid</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#268bd2;">void </span><span style="background-color:#fdf6e3;color:#859900;">*</span><span style="background-color:#fdf6e3;color:#268bd2;">addr</span><span style="background-color:#fdf6e3;color:#657b83;">, </span><span style="background-color:#fdf6e3;color:#268bd2;">void </span><span style="background-color:#fdf6e3;color:#859900;">*</span><span style="background-color:#fdf6e3;color:#268bd2;">data</span><span style="background-color:#fdf6e3;color:#657b83;">);
+<pre style="background-color:#fdf6e3;">
+<span style="color:#268bd2;">long </span><span style="color:#b58900;">ptrace</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">enum</span><span style="color:#657b83;"> __ptrace_request </span><span style="color:#268bd2;">request</span><span style="color:#657b83;">, </span><span style="color:#859900;">pid_t </span><span style="color:#268bd2;">pid</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">void </span><span style="color:#859900;">*</span><span style="color:#268bd2;">addr</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">void </span><span style="color:#859900;">*</span><span style="color:#268bd2;">data</span><span style="color:#657b83;">);
 </span></pre>
 <p>As we will see, a lot of functionality and complexity is packed into this API.</p>
 <ul>
@@ -156,6 +154,6 @@ is some value we wish <code>ptrace</code> to use.</p>
 </div>
 
         </div>
-    </body>
+    <script src="/livereload.js?port=1024&mindelay=10"></script></body>
 
 </html>
