@@ -2,40 +2,40 @@
 <urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
     
         <url>
-            <loc>http%3A//127.0.0.1%3A1111/</loc>
+            <loc>https%3A//gatowololo.github.io/</loc>
             
         </url>
     
         <url>
-            <loc>http%3A//127.0.0.1%3A1111/blog/clangmissingheaders/</loc>
+            <loc>https%3A//gatowololo.github.io/blog/clangmissingheaders/</loc>
             
                 <lastmod>2018-11-14</lastmod>
             
         </url>
     
         <url>
-            <loc>http%3A//127.0.0.1%3A1111/blog/fuse/</loc>
+            <loc>https%3A//gatowololo.github.io/blog/fuse/</loc>
             
                 <lastmod>2019-02-22</lastmod>
             
         </url>
     
         <url>
-            <loc>http%3A//127.0.0.1%3A1111/blog/main/</loc>
+            <loc>https%3A//gatowololo.github.io/blog/main/</loc>
             
                 <lastmod>2018-06-18</lastmod>
             
         </url>
     
         <url>
-            <loc>http%3A//127.0.0.1%3A1111/blog/ptraceintro/</loc>
+            <loc>https%3A//gatowololo.github.io/blog/ptraceintro/</loc>
             
                 <lastmod>2018-06-19</lastmod>
             
         </url>
     
         <url>
-            <loc>http%3A//127.0.0.1%3A1111/blog/rustfutures/</loc>
+            <loc>https%3A//gatowololo.github.io/blog/rustfutures/</loc>
             
                 <lastmod>2019-05-29</lastmod>
             

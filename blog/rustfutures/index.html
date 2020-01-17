@@ -10,9 +10,9 @@
       <title>Omar</title>
 
       <!-- CSS -->
-      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;print.css" media="print">
-      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;poole.css">
-      <link rel="stylesheet" href="http:&#x2F;&#x2F;127.0.0.1:1111&#x2F;hyde.css">
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;print.css" media="print">
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;poole.css">
+      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;hyde.css">
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
       
@@ -27,7 +27,7 @@
                 <div class="container sidebar-sticky">
                     <div class="sidebar-about">
                         
-                            <a href="http:&#x2F;&#x2F;127.0.0.1:1111"><h1>Omar</h1></a>
+                            <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>Omar</h1></a>
                             
                             <p class="lead">Does your programming language spark joy?</p>
                             
@@ -57,10 +57,10 @@
   <h1 id="preface-and-goals">Preface and Goals</h1>
 <p>I am by no means a expert on Rust Futures. This is just what I learned trying to implement a Future for my use-case. Specifically, we will see how to use Rust's latest<sup class="footnote-reference"><a href="#1">1</a></sup> future API to implement our own reactor and executor (No Tokio or Mio here!). In this blog I attempt to provide resources, history of futures, and a working implementation. Including the upcoming <strong>async</strong> and <strong>await</strong> syntax.</p>
 <h1 id="difficulties-learning-futures">Difficulties Learning Futures</h1>
-<p>Like many other Rust developers on <em>the internet</em>, I had a general idea of what futures are and their purpose in Rust. However, when trying to grasp the implementation details, or implement your own future, finding information on the internet is quite frustrating. Specifically, futures are still very much in flux, so people have held off from creating documentation that might soon be outdated. Existing <a href="http://127.0.0.1:1111/blog/rustfutures/#r1">[1]</a> blogs were outdated with messages like &quot;This document is now out of date. I recommend learning about Rust futures another way.&quot; . These outdated blogs may still be useful! But starting with no experience with futures, it was hard to tell apart the useful from outdated. The biggest challenge for the curious: it is <em>hard</em> to find resources that explain futures without using Tokio or Mio.</p>
+<p>Like many other Rust developers on <em>the internet</em>, I had a general idea of what futures are and their purpose in Rust. However, when trying to grasp the implementation details, or implement your own future, finding information on the internet is quite frustrating. Specifically, futures are still very much in flux, so people have held off from creating documentation that might soon be outdated. Existing <a href="https://gatowololo.github.io/blog/rustfutures/#r1">[1]</a> blogs were outdated with messages like &quot;This document is now out of date. I recommend learning about Rust futures another way.&quot; . These outdated blogs may still be useful! But starting with no experience with futures, it was hard to tell apart the useful from outdated. The biggest challenge for the curious: it is <em>hard</em> to find resources that explain futures without using Tokio or Mio.</p>
 <h1 id="assumptions-and-goals">Assumptions and Goals</h1>
-<p>This post assumes intermediate Rust knowledge (e.g <code>impl trait</code>, <code>associated types</code>, <code>closures</code> , etc) and a high level understanding of futures and async IO. For the uninitialized, I found Snoyman's blog <a href="http://127.0.0.1:1111/blog/rustfutures/#r2">[2]</a> post quite helpful.</p>
-<p>The full implementation we will develop in this post can found here <a href="http://127.0.0.1:1111/blog/rustfutures/#r3">[3]</a>.</p>
+<p>This post assumes intermediate Rust knowledge (e.g <code>impl trait</code>, <code>associated types</code>, <code>closures</code> , etc) and a high level understanding of futures and async IO. For the uninitialized, I found Snoyman's blog <a href="https://gatowololo.github.io/blog/rustfutures/#r2">[2]</a> post quite helpful.</p>
+<p>The full implementation we will develop in this post can found here <a href="https://gatowololo.github.io/blog/rustfutures/#r3">[3]</a>.</p>
 <p>You do not need any systems programming knowledge even though I'll be implementing a future and runtime for waiting on child exit events.</p>
 <h1 id="background">Background</h1>
 <p>For my current research project we're interested in implementing handlers for Linux ptrace events. We want to have a coroutine-style program structure: where we have one coroutine handler per process/thread we are tracing. A big design constraint is that ptrace is not very friendly to threaded executions, that is you cannot (easily) have a multi-threaded tracer.</p>
@@ -68,13 +68,13 @@
 <p>We will be implementing a simpler example here, where a future may wait on a child exit event.</p>
 <h1 id="existing-resources">Existing Resources</h1>
 <p>I found the following resources invaluable when learning the finer details of futures. You don't have to read all these, as I will (attempt) to  go over everything you need to know to get started with futures.</p>
-<p>Farenheit <a href="http://127.0.0.1:1111/blog/rustfutures/#r4">[4]</a> has the same goal as this blog post (no tokio or mio). I used Farenheit as my main blueprint with some changes.</p>
-<p>The Rust Async Book <a href="http://127.0.0.1:1111/blog/rustfutures/#r5">[5]</a> is still in the works, I found their chapter two: &quot;Under the Hood: Executing Futures and Tasks&quot; most helpful.</p>
-<p>The embedded systems executor series <a href="http://127.0.0.1:1111/blog/rustfutures/#r6">[6]</a> was very informative.</p>
-<p>Tokio's docs <a href="http://127.0.0.1:1111/blog/rustfutures/#r7">[7]</a><a href="http://127.0.0.1:1111/blog/rustfutures/#r8">[8]</a> have a lot of useful information.</p>
-<p>The <em>Understanding the Waker</em> series <a href="http://127.0.0.1:1111/blog/rustfutures/#r9">[9]</a> from the source itself.</p>
+<p>Farenheit <a href="https://gatowololo.github.io/blog/rustfutures/#r4">[4]</a> has the same goal as this blog post (no tokio or mio). I used Farenheit as my main blueprint with some changes.</p>
+<p>The Rust Async Book <a href="https://gatowololo.github.io/blog/rustfutures/#r5">[5]</a> is still in the works, I found their chapter two: &quot;Under the Hood: Executing Futures and Tasks&quot; most helpful.</p>
+<p>The embedded systems executor series <a href="https://gatowololo.github.io/blog/rustfutures/#r6">[6]</a> was very informative.</p>
+<p>Tokio's docs <a href="https://gatowololo.github.io/blog/rustfutures/#r7">[7]</a><a href="https://gatowololo.github.io/blog/rustfutures/#r8">[8]</a> have a lot of useful information.</p>
+<p>The <em>Understanding the Waker</em> series <a href="https://gatowololo.github.io/blog/rustfutures/#r9">[9]</a> from the source itself.</p>
 <p>TODO Add Local Executor (Naive, loop on all futures)</p>
-<p>Here <a href="http://127.0.0.1:1111/blog/rustfutures/#r10">[10]</a><a href="http://127.0.0.1:1111/blog/rustfutures/#r11">[11]</a> are other confused souls like myself, which helped me piece together part of the story.</p>
+<p>Here <a href="https://gatowololo.github.io/blog/rustfutures/#r10">[10]</a><a href="https://gatowololo.github.io/blog/rustfutures/#r11">[11]</a> are other confused souls like myself, which helped me piece together part of the story.</p>
 <h1 id="background-terminology">Background Terminology</h1>
 <p>There are a lot of terms used around futures. Many blogs and documentation expect the reader to already know what they are. I tried to give definition here. All the details will come later!</p>
 <ul>
@@ -88,20 +88,20 @@
 <h1 id="getting-started">Getting started</h1>
 <p>With our new terminology we can now talk about exactly why we will implement. When I say &quot;future runtime&quot;, I mean specifically the <em>executor</em> that will schedule our <em>tasks</em>, and the <em>reactor</em> which will do the low-level communication with the OS. We will see how the executor runs the reactor, schedules tasks, and generates wakers. We will also implement a future, i.e we will create our own async computation which we can wait on.</p>
 <h1 id="tokio-and-mio-what-are-they">Tokio and Mio (What are they?)</h1>
-<p>Tokio<a href="http://127.0.0.1:1111/blog/rustfutures/#r12">[12]</a> is a futures framework/runtime as it provides the executor as well as the futures for many asynchronous tasks. Tokyo defers the work of doing the low-level IO with the OS to Mio <a href="http://127.0.0.1:1111/blog/rustfutures/#r13">[13]</a>. In Linux, Mio runs an <code>epoll</code> loop to poll for events. The previous description is an understatement: both libraries do <em>a lot</em> and I don't want to sell them short. Similarly, due to the complexity, it was not obvious to me if they could fit our use-case, most examples I found in the Tokio docs had to do with networks and severs. Lastly, our team hesitated to introduce such heavy weight dependencies into our project.</p>
+<p>Tokio<a href="https://gatowololo.github.io/blog/rustfutures/#r12">[12]</a> is a futures framework/runtime as it provides the executor as well as the futures for many asynchronous tasks. Tokyo defers the work of doing the low-level IO with the OS to Mio <a href="https://gatowololo.github.io/blog/rustfutures/#r13">[13]</a>. In Linux, Mio runs an <code>epoll</code> loop to poll for events. The previous description is an understatement: both libraries do <em>a lot</em> and I don't want to sell them short. Similarly, due to the complexity, it was not obvious to me if they could fit our use-case, most examples I found in the Tokio docs had to do with networks and severs. Lastly, our team hesitated to introduce such heavy weight dependencies into our project.</p>
 <h1 id="our-first-piece-of-rust-code-what-is-a-future">Our First Piece of Rust Code: What is a Future?</h1>
-<p>A future is simply any type implements the future trait<a href="http://127.0.0.1:1111/blog/rustfutures/#r14">[14]</a>.</p>
+<p>A future is simply any type implements the future trait<a href="https://gatowololo.github.io/blog/rustfutures/#r14">[14]</a>.</p>
 <pre style="background-color:#fdf6e3;">
 <span style="color:#859900;">pub </span><span style="color:#268bd2;">trait </span><span style="color:#657b83;">Future {
 </span><span style="color:#268bd2;">type </span><span style="color:#657b83;">Output;
     </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">poll</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">: Pin&lt;</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">Self</span><span style="color:#657b83;">&gt;, </span><span style="color:#268bd2;">cx</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;mut</span><span style="color:#657b83;"> Context) -&gt; Poll&lt;</span><span style="color:#268bd2;">Self::</span><span style="color:#657b83;">Output&gt;;
 }
 </span></pre><h2 id="the-output-associated-type">The <code>Output</code> Associated Type</h2>
-<p><code>Output</code>, aptly named, represents the type our future will produce. Our future for waiting on child exiting <code>Output</code> will be a Nix <a href="http://127.0.0.1:1111/blog/rustfutures/#r15">[15]</a> <code>WaitStatus</code> <a href="http://127.0.0.1:1111/blog/rustfutures/#r16">[16]</a>.</p>
+<p><code>Output</code>, aptly named, represents the type our future will produce. Our future for waiting on child exiting <code>Output</code> will be a Nix <a href="https://gatowololo.github.io/blog/rustfutures/#r15">[15]</a> <code>WaitStatus</code> <a href="https://gatowololo.github.io/blog/rustfutures/#r16">[16]</a>.</p>
 <h2 id="the-poll-method">The <code>poll</code> Method</h2>
 <p><code>poll</code> is the one method which we have to implement for our future. There is a lot to unpack in the type signature, but it also provides a lot of information (types FTW!):</p>
-<p>Notice the <code>self</code> argument has type <code>Pin&lt;&amp;mut Self&gt;</code> (instead of regular old <code>&amp;mut Self</code>). This was my first time seeing an arbitrary self type <a href="http://127.0.0.1:1111/blog/rustfutures/#r17">[17]</a>. That is we cannot simply call <code>myFuture.poll(...)</code>, unless our future is wrapped in a Pin <em>and</em> the data inside is a mutable reference.</p>
-<p><code>Pin</code> is magical and mysterious, I defer <code>Pin</code> details to the documentation <a href="http://127.0.0.1:1111/blog/rustfutures/#r18">[18]</a>. However, a one sentence summary quoting the docs: &quot;A <code>Pin&lt;P&gt;</code> ensures that the pointee of any pointer type <code>P</code> has a stable location in memory, meaning it cannot be moved elsewhere and its memory cannot be deallocated until it gets dropped&quot;. More information on the API design of Pin can be found here <a href="http://127.0.0.1:1111/blog/rustfutures/#r19">[19]</a>. Why do Rust Futures need to be pinned? Well it's complicated: The idea is that in the implementation details, futures end up having some self-referential data, Rust lifetime checker generally does not like this. <code>Pin</code> therefore asks as a guarantee that the future will not be moved/dropped. The master <strong>@withoutboats</strong> has a throughout blog post series <a href="http://127.0.0.1:1111/blog/rustfutures/#r20">[20]</a> describing the problem in detail. As an implementor of the <code>Future</code> trait, this is not as important. When implementing the executor and reactor, we have to care.</p>
+<p>Notice the <code>self</code> argument has type <code>Pin&lt;&amp;mut Self&gt;</code> (instead of regular old <code>&amp;mut Self</code>). This was my first time seeing an arbitrary self type <a href="https://gatowololo.github.io/blog/rustfutures/#r17">[17]</a>. That is we cannot simply call <code>myFuture.poll(...)</code>, unless our future is wrapped in a Pin <em>and</em> the data inside is a mutable reference.</p>
+<p><code>Pin</code> is magical and mysterious, I defer <code>Pin</code> details to the documentation <a href="https://gatowololo.github.io/blog/rustfutures/#r18">[18]</a>. However, a one sentence summary quoting the docs: &quot;A <code>Pin&lt;P&gt;</code> ensures that the pointee of any pointer type <code>P</code> has a stable location in memory, meaning it cannot be moved elsewhere and its memory cannot be deallocated until it gets dropped&quot;. More information on the API design of Pin can be found here <a href="https://gatowololo.github.io/blog/rustfutures/#r19">[19]</a>. Why do Rust Futures need to be pinned? Well it's complicated: The idea is that in the implementation details, futures end up having some self-referential data, Rust lifetime checker generally does not like this. <code>Pin</code> therefore asks as a guarantee that the future will not be moved/dropped. The master <strong>@withoutboats</strong> has a throughout blog post series <a href="https://gatowololo.github.io/blog/rustfutures/#r20">[20]</a> describing the problem in detail. As an implementor of the <code>Future</code> trait, this is not as important. When implementing the executor and reactor, we have to care.</p>
 <p>We will go into details about the <code>Context</code> later.</p>
 <p>The return type <code>Poll&lt;Self::Output&gt;</code> is fairly straightforward:</p>
 <pre style="background-color:#fdf6e3;">
@@ -136,7 +136,7 @@
     }
 }
 </span></pre>
-<p>The <code>waitpid()</code> system call <a href="http://127.0.0.1:1111/blog/rustfutures/#r21">[21]</a> takes a <code>Pid</code> and blocks until that process' status has changed. This is a <em>key</em> difference between traditional blocking IO and asynchronous IO: we should not block on an event. Therefore we use the <code>WaitPidFlag::WNOHANG</code> <em>with no hang</em> flag. This turns <code>waitpid</code> from a blocking call to polling. In general, <strong>your poll implementation should not block</strong> and should return quickly. Otherwise, other tasks sharing the same thread will be blocked as well.</p>
+<p>The <code>waitpid()</code> system call <a href="https://gatowololo.github.io/blog/rustfutures/#r21">[21]</a> takes a <code>Pid</code> and blocks until that process' status has changed. This is a <em>key</em> difference between traditional blocking IO and asynchronous IO: we should not block on an event. Therefore we use the <code>WaitPidFlag::WNOHANG</code> <em>with no hang</em> flag. This turns <code>waitpid</code> from a blocking call to polling. In general, <strong>your poll implementation should not block</strong> and should return quickly. Otherwise, other tasks sharing the same thread will be blocked as well.</p>
 <p>The idea of polling is very general. For example, we can poll on sockets to see if data is available from network, or we can wait for a timer to run out, or in our example we will wait for a child process to exit. The method or IO system call needed for polling is very much case-specific<sup class="footnote-reference"><a href="#2">2</a></sup>.</p>
 <h1 id="async-and-await">Async and await.</h1>
 <p>We can now write a function which uses our future:</p>
@@ -260,7 +260,7 @@ New future returned Pending!
 <p>(<strong>Note:</strong> This is probably not the best function signature to add a futures. As Rust will specialize the function for every concrete type used for <code>F</code>. A dynamic trait object is probably more appropriate here.)</p>
 <p>The idea is simple: we <em>poll</em> the <code>added_future</code> future once. If polling returns <code>Poll::Pending</code>, we add our future to a queue and try again later, otherwise it runs to completion.</p>
 <h3 id="calling-poll">Calling poll(...)</h3>
-<p>We want to call <code>fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context) -&gt; Poll&lt;Self::Output&gt;</code>. So first we need to wrap our future in a <code>Pin</code>. However, calling Pin's <code>fn new(pointer: P) -&gt; Pin&lt;P&gt;</code> <a href="http://127.0.0.1:1111/blog/rustfutures/#r22">[22]</a> does not work:</p>
+<p>We want to call <code>fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context) -&gt; Poll&lt;Self::Output&gt;</code>. So first we need to wrap our future in a <code>Pin</code>. However, calling Pin's <code>fn new(pointer: P) -&gt; Pin&lt;P&gt;</code> <a href="https://gatowololo.github.io/blog/rustfutures/#r22">[22]</a> does not work:</p>
 <pre style="background-color:#fdf6e3;">
 <span style="color:#657b83;">error[</span><span style="color:#cb4b16;">E0277</span><span style="color:#657b83;">]: the </span><span style="color:#268bd2;">trait </span><span style="color:#657b83;">bound `F: std::ops::Deref` is not satisfied
   --&gt; src/executor.rs:89:9
@@ -288,7 +288,7 @@ New future returned Pending!
 </span></pre>
 <p>And finally we have the right type set up to call <code>poll</code>!</p>
 <h3 id="creating-a-context-and-waker">Creating a Context and Waker</h3>
-<p><code>poll</code> takes an argument <code>cx: &amp;mut Context</code>. Checking out <code>Context</code> <a href="http://127.0.0.1:1111/blog/rustfutures/#r23">[23]</a>. We see a <code>Context</code> just holds a reference to the waker via the method <code>pub fn waker(&amp;self) -&gt; &amp;'a Waker</code>. In the future <code>Context</code> may expand to include other things.</p>
+<p><code>poll</code> takes an argument <code>cx: &amp;mut Context</code>. Checking out <code>Context</code> <a href="https://gatowololo.github.io/blog/rustfutures/#r23">[23]</a>. We see a <code>Context</code> just holds a reference to the waker via the method <code>pub fn waker(&amp;self) -&gt; &amp;'a Waker</code>. In the future <code>Context</code> may expand to include other things.</p>
 <p>The only way I have to create a <code>Context</code> is via the associated function:</p>
 <pre style="background-color:#fdf6e3;">
 <span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">from_waker</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">waker</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;&#39;a</span><span style="color:#657b83;"> Waker) -&gt; Context&lt;</span><span style="color:#859900;">&#39;a</span><span style="color:#657b83;">&gt;
@@ -437,7 +437,7 @@ TODO Clean Up!</li>
 <span style="color:#93a1a1;">/// Wake up the task associated with this Waker.
 </span><span style="color:#859900;">pub </span><span style="color:#268bd2;">fn </span><span style="color:#b58900;">wake</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">self</span><span style="color:#657b83;">)
 </span></pre>
-<p>Thanks documentation. This is intentionally vague because <em>waking</em> is entirely implementation dependent, and will be different for every executor implementation. For an in depth dive of wakers see <strong>@withoutboats</strong> excellent blog series <a href="http://127.0.0.1:1111/blog/rustfutures/#r9">[9]</a>. However, in general Thread Local State (TSL) TODO REF accessible to both the waker and the executor is used to inform the executor which <code>TaskID</code>(s) should run next.</p>
+<p>Thanks documentation. This is intentionally vague because <em>waking</em> is entirely implementation dependent, and will be different for every executor implementation. For an in depth dive of wakers see <strong>@withoutboats</strong> excellent blog series <a href="https://gatowololo.github.io/blog/rustfutures/#r9">[9]</a>. However, in general Thread Local State (TSL) TODO REF accessible to both the waker and the executor is used to inform the executor which <code>TaskID</code>(s) should run next.</p>
 <p>So in <code>executor.rs</code> we define:</p>
 <pre style="background-color:#fdf6e3;">
 <span style="color:#657b83;">thread_local! {
@@ -481,15 +481,15 @@ TODO Clean Up!</li>
 <h4 id="r21">[21] <a href="https://docs.rs/nix/0.14.1/nix/sys/wait/fn.waitpid.html">Nix: Waitpid</a></h4>
 <h4 id="r22">[22] <a href="https://doc.rust-lang.org/nightly/std/pin/struct.Pin.html#method.new">Pin::new()</a></h4>
 <h4 id="r23">[23] <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.16/futures/task/struct.Context.html">Futures Context</a></h4>
-<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
-<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
-<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
-<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
-<h4 id="r">[] <a href="http://127.0.0.1:1111/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="https://gatowololo.github.io/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="https://gatowololo.github.io/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="https://gatowololo.github.io/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="https://gatowololo.github.io/blog/rustfutures/"></a></h4>
+<h4 id="r">[] <a href="https://gatowololo.github.io/blog/rustfutures/"></a></h4>
 
 </div>
 
         </div>
-    <script src="/livereload.js?port=1024&mindelay=10"></script></body>
+    </body>
 
 </html>
