@@ -23,7 +23,7 @@
         <url>
             <loc>https%3A//gatowololo.github.io/blog/main/</loc>
             
-                <lastmod>2018-06-18</lastmod>
+                <lastmod>2019-08-01</lastmod>
             
         </url>
     
@@ -35,9 +35,16 @@
         </url>
     
         <url>
-            <loc>https%3A//gatowololo.github.io/blog/rustfutures/</loc>
+            <loc>https%3A//gatowololo.github.io/blog/rust-futures/</loc>
             
                 <lastmod>2019-05-29</lastmod>
+            
+        </url>
+    
+        <url>
+            <loc>https%3A//gatowololo.github.io/publications/main/</loc>
+            
+                <lastmod>2020-02-10</lastmod>
             
         </url>
     
