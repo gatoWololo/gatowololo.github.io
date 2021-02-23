@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
     <head>
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -39,9 +40,9 @@
                         
                         <li><a href="&#x2F;">About Me</a></li>
                         
-                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
+                        <li><a href="&#x2F;blog&#x2F;">Blog</a></li>
                         
-                        <li><a href="&#x2F;publications&#x2F;main">Publications</a></li>
+                        <li><a href="&#x2F;publications">Publications</a></li>
                         
                         <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
                         
@@ -52,11 +53,159 @@
         
 
         <div class="content container">
-            
+          
 <div class="post">
   <h1 class="post-title">Using Cargo [patch] to Override Dependencies</h1>
-  <span class="post-date"> Last updated: 2020-02-22</span>
-  <p><em>Recommened Rust Skill</em>: <strong>Intermediate</strong> <sup class="footnote-reference"><a href="#1">1</a></sup></p>
+  <span class="post-date"> Last updated: 22-02-2021</span>
+
+    <h3>Table Of Content</h3>
+    
+        <ul>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#summary">Summary</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#motivation">Motivation</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#cargo-patch">Cargo [patch]</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#patching-with-a-path-to-local-alt-dependency">Patching with a Path to Local alt Dependency</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#cargo-update">Cargo Update</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#patching-dependency-with-a-github-alt-dependency">Patching Dependency With a Github alt Dependency</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#patching-github-dependencies">Patching GitHub Dependencies</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#conclusion">Conclusion</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#footnotes">Footnotes</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/cargo-patch/#comments">Comments</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+        </ul>
+    
+
+  <p><em>Recommended Rust Skill</em>: <strong>Intermediate</strong> <sup class="footnote-reference"><a href="#1">1</a></sup></p>
 <h3 id="summary"><a class="zola-anchor" href="#summary" aria-label="Anchor link for: summary">🔗</a>
 Summary</h3>
 <p>Here we cover Cargo's useful mechanism for temporarily and easily overriding dependencies: <code>[patch]</code>. I found the official documentation quite terse. Making it difficult to use in situations more complicated than simple examples. So here, we motivate and show many scenarios. Finally, we point out various edge-cases and footguns beyond what the Cargo book covers. </p>
@@ -113,19 +262,19 @@ version. This may also occur with an optional dependency that is not enabled.
 <p>Cargo fetches the source code of all dependencies when building a package, so my current solution is to copy the locally downloaded version of the crate. My IDE tells me the source code for <code>nix</code> is stored in <code>~/.cargo/registry/src/github.com-1ecc6299db9ec823/nix-0.17.0/</code><sup class="footnote-reference"><a href="#6">6</a></sup>. We can copy this directory to modify the code for our patching.</p>
 <p>To exacerbate the difficulty, a dependency entry in the manifest (e.g. <code>nix = &quot;0.17&quot;</code>) is generally not enough to tell what version of a package Cargo is actually using. Cargo has some choice when picking version. See <a href="https://doc.rust-lang.org/cargo/reference/resolver.html">Dependency Resolution</a> for more information. Instead, consult the <code>Cargo.lock</code> file see the exact version the resolver picked for our code:</p>
 <pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Cargo.lock file</span><span style="color:#657b83;">
-...
-[[package]]
+<span style="color:#93a1a1;"># Cargo.lock file
+# ...
+</span><span style="color:#657b83;">[[package]]
 </span><span style="color:#268bd2;">name </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">nix</span><span style="color:#839496;">&quot;
-</span><span style="color:#268bd2;">version </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.17.0</span><span style="color:#839496;">&quot; </span><span style="color:#93a1a1;"># May be different from the version listed on the manifest.</span><span style="color:#657b83;">
-...
+</span><span style="color:#268bd2;">version </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.17.0</span><span style="color:#839496;">&quot; </span><span style="color:#93a1a1;"># May be different from the version listed on the manifest.
+# ...
 </span></pre><h3 id="patching-dependency-with-a-github-alt-dependency"><a class="zola-anchor" href="#patching-dependency-with-a-github-alt-dependency" aria-label="Anchor link for: patching-dependency-with-a-github-alt-dependency">🔗</a>
 Patching Dependency With a Github <code>alt</code> Dependency</h3>
 <p>We can push modified dependency to Github and have <code>cargo patch</code> use this version. This way, Cargo will automatically download our patch when building the project. This is convenient for others who may be using our patch. </p>
 <pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Our Cargo.toml</span><span style="color:#657b83;">
-...
-[dependencies]
+<span style="color:#93a1a1;"># Our Cargo.toml
+# ...
+</span><span style="color:#657b83;">[dependencies]
 </span><span style="color:#268bd2;">nix </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.17</span><span style="color:#839496;">&quot;
 </span><span style="color:#268bd2;">libc </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.2</span><span style="color:#839496;">&quot;
 
@@ -245,17 +394,41 @@ Caused by:
 <p>Attempting to patch in the root manifest file led to two incompatible versions of <code>rr_channel</code> being used. Why was this happening? Notice the git URL for <code>crate_b/Cargo.toml</code> accidentally has extra <code>/</code>! So <code>rr_channel</code> was only getting patched in the first instance! Using the <code>cargo tree</code> command proved invaluable for finding the offending crate's manifest.</p>
 <h3 id="conclusion"><a class="zola-anchor" href="#conclusion" aria-label="Anchor link for: conclusion">🔗</a>
 Conclusion</h3>
-<p>Patching is a powerful and very useful mechanism. Beware of the many sharp edges. I believe Cargo is extremely well designed, but dependency management is complicated and Cargo must handle many cases.</p>
-<h4 id="footnotes"><a class="zola-anchor" href="#footnotes" aria-label="Anchor link for: footnotes">🔗</a>
-Footnotes</h4>
-<p><sup class="footnote-reference"><a href="#1">1</a></sup> One common feedback about the Rust ecosystem is the lack of intermediate and advanced documentation and blogs. I have several half-finished blogs because they were ambitious, so this blog will assume familiarity with <code>Cargo</code>, <code>Cargo.toml</code>, and <code>Cargo.lock</code>. And roughly, how Rust deals with dependencies. In the future I may come back and do a <code>Cargo.toml</code> and <code>Cargo.lock</code> in depth blog.</p>
-<p><sup class="footnote-reference"><a href="#2">2</a></sup> <a href="https://crates.io/">crates.io</a> is Rust's offical crate repository. By default all crate dependencies are downloaded from here on <code>cargo build</code>.</p>
-<p><sup class="footnote-reference"><a href="#3">3</a></sup> <a href="https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html">Here</a> is the official Cargo Book documentation on <code>[patch]</code>.</p>
-<p><sup class="footnote-reference"><a href="#4">4</a></sup> While Cargo replace is not technically deprecated. The <a href="https://doc.rust-lang.org/edition-guide/rust-2018/cargo-and-crates-io/replacing-dependencies-with-patch.html">docs</a> state &quot;while we don't intend to deprecate or remove [replace], you should prefer [patch] in all circumstances&quot;. So we should always use Cargo patch.</p>
-<p><sup class="footnote-reference"><a href="#5">5</a></sup> There is nothing stopping us from leaving the <code>[patch]</code> permanently, but it does not seem to be good practice.</p>
-<p><sup class="footnote-reference"><a href="#6">6</a></sup> The structure of the <code>~/.cargo/</code> directory is unclear to me. So I omit attempting to explain finding this path.</p>
-
+<p>Patching is a powerful and very useful mechanism. Beware of the many sharp edges. I believe Cargo is extremely well designed, but dependency management is complicated as Cargo must handle many use cases.</p>
+<h3 id="footnotes"><a class="zola-anchor" href="#footnotes" aria-label="Anchor link for: footnotes">🔗</a>
+Footnotes</h3>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>One common feedback about the Rust ecosystem is the lack of intermediate and advanced documentation and blogs. I have several half-finished blogs because they were ambitious, so this blog will assume familiarity with <code>Cargo</code>, <code>Cargo.toml</code>, and <code>Cargo.lock</code>. And roughly, how Rust deals with dependencies. In the future I may come back and do a <code>Cargo.toml</code> and <code>Cargo.lock</code> in depth blog.</p>
 </div>
+<div class="footnote-definition" id="2"><sup class="footnote-definition-label">2</sup>
+<p><a href="https://crates.io/">crates.io</a> is Rust's official crate repository. By default all crate dependencies are downloaded from here on <code>cargo build</code>.</p>
+</div>
+<div class="footnote-definition" id="3"><sup class="footnote-definition-label">3</sup>
+<p><a href="https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html">Here</a> is the official Cargo Book documentation on <code>[patch]</code>.</p>
+</div>
+<div class="footnote-definition" id="4"><sup class="footnote-definition-label">4</sup>
+<p>While Cargo replace is not technically deprecated. The <a href="https://doc.rust-lang.org/edition-guide/rust-2018/cargo-and-crates-io/replacing-dependencies-with-patch.html">docs</a> state &quot;while we don't intend to deprecate or remove [replace], you should prefer [patch] in all circumstances&quot;. So we should always use Cargo patch.</p>
+</div>
+<div class="footnote-definition" id="5"><sup class="footnote-definition-label">5</sup>
+<p>There is nothing stopping us from leaving the <code>[patch]</code> permanently, but it does not seem to be good practice.</p>
+</div>
+<div class="footnote-definition" id="6"><sup class="footnote-definition-label">6</sup>
+<p>The structure of the <code>~/.cargo/</code> directory is unclear to me. So I omit attempting to explain finding this path.</p>
+</div>
+<h3 id="comments"><a class="zola-anchor" href="#comments" aria-label="Anchor link for: comments">🔗</a>
+Comments</h3>
+<p>Please leave comments below. You can also leave comments directly in the relevant <a href="https://github.com/gatoWololo/PersonalWebsite/issues">Github Issue</a> and it will show up below.</p>
+
+
+    <script src="https://utteranc.es/client.js"
+            repo="gatowololo/PersonalWebsite"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
+</div>
+
 
         </div>
     </body>

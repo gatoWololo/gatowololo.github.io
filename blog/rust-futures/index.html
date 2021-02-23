@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
     <head>
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -39,9 +40,9 @@
                         
                         <li><a href="&#x2F;">About Me</a></li>
                         
-                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
+                        <li><a href="&#x2F;blog&#x2F;">Blog</a></li>
                         
-                        <li><a href="&#x2F;publications&#x2F;main">Publications</a></li>
+                        <li><a href="&#x2F;publications">Publications</a></li>
                         
                         <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
                         
@@ -52,10 +53,270 @@
         
 
         <div class="content container">
-            
+          
 <div class="post">
   <h1 class="post-title">Implement your own Rust: Future, Reactor, Executor, And More (For beginners, by beginners)</h1>
-  <span class="post-date"> Last updated: 2019-05-29</span>
+  <span class="post-date"> Last updated: 29-05-2019</span>
+
+    <h3>Table Of Content</h3>
+    
+        <ul>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#preface-and-goals">Preface and Goals</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#difficulties-learning-futures">Difficulties Learning Futures</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#assumptions-and-goals">Assumptions and Goals</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#background">Background</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#existing-resources">Existing Resources</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#background-terminology">Background Terminology</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#getting-started">Getting started</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#tokio-and-mio-what-are-they">Tokio and Mio (What are they?)</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#our-first-piece-of-rust-code-what-is-a-future">Our First Piece of Rust Code: What is a Future?</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#implementing-future-first-try">Implementing Future, First Try</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#async-and-await">Async and await.</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#calling-futures">Calling Futures.</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#implementing-an-executor">Implementing an Executor</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#the-polling-registering-blocking-waking-loop">The Polling, registering, blocking, waking, loop</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#implementing-a-reactor">Implementing a Reactor</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#all-about-the-waker">All About the Waker</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#lasting-thoughts">Lasting Thoughts</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+                <li>
+                    <a href="https://gatowololo.github.io/blog/rust-futures/#footnotes">Footnotes</a>
+
+
+
+
+
+
+
+
+
+
+                </li>
+            
+        </ul>
+    
+
   <h1 id="preface-and-goals"><a class="zola-anchor" href="#preface-and-goals" aria-label="Anchor link for: preface-and-goals">🔗</a>
 Preface and Goals</h1>
 <p>I am by no means a expert on Rust Futures. This is just what I learned trying to implement a Future for my use-case. Specifically, we will see how to use Rust's latest<sup class="footnote-reference"><a href="#1">1</a></sup> future API to implement our own reactor and executor (No Tokio or Mio here!). In this blog I attempt to provide resources, history of futures, and a working implementation. Including the upcoming <strong>async</strong> and <strong>await</strong> syntax.</p>
@@ -547,7 +808,16 @@ References</h2>
 <h4 id="r"><a class="zola-anchor" href="#r" aria-label="Anchor link for: r">🔗</a>
 [] <a href="https://gatowololo.github.io/blog/rust-futures/"></a></h4>
 
+
+    <script src="https://utteranc.es/client.js"
+            repo="gatowololo/PersonalWebsite"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+    </script>
 </div>
+
 
         </div>
     </body>
