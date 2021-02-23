@@ -7,7 +7,7 @@
       <!-- Enable responsiveness on mobile devices-->
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
-      <title>Omar</title>
+      <title>Time For Crab 🦀</title>
 
       <!-- CSS -->
       <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;print.css" media="print">
@@ -27,9 +27,9 @@
                 <div class="container sidebar-sticky">
                     <div class="sidebar-about">
                         
-                            <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>Omar</h1></a>
+                            <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>Time For Crab 🦀</h1></a>
                             
-                            <p class="lead">&quot;Time for Crab&quot; 🦀</p>
+                            <p class="lead">Rust: Taste like crab, fast like C.</p>
                             
                         
                     </div>
@@ -58,7 +58,8 @@
   <span class="post-date"> Last updated: 2018-11-14</span>
   <p>(Hopefully someone will find this useful, since I was not able to find any other clear
 resource online).</p>
-<h3 id="problem">Problem</h3>
+<h3 id="problem"><a class="zola-anchor" href="#problem" aria-label="Anchor link for: problem">🔗</a>
+Problem</h3>
 <p>In our Linux Ubuntu 18.04 server, I kept getting this error when trying to compile our
 C++ project with clang++:</p>
 <pre style="background-color:#fdf6e3;">
@@ -69,7 +70,8 @@ C++ project with clang++:</p>
 <p>Looking online I was not able to find much help. Googling &quot;clang missing c++ headers&quot;
 returned the only relevant search <a href="https://stackoverflow.com/questions/26333823/clang-doesnt-see-basic-headers">clang doesn't see basic headers</a>.</p>
 <p>None of these answers were helpful to me... Compiling with g++ works, so I do have the correct C++ headers installed.</p>
-<h3 id="solution">Solution</h3>
+<h3 id="solution"><a class="zola-anchor" href="#solution" aria-label="Anchor link for: solution">🔗</a>
+Solution</h3>
 <p>Taking the failing command from <code>make</code> and running it manually, I could reproduce the issue:
 <code>clang++ -Wall -c -o dettraceSystemCall.o dettraceSystemCall.cpp</code></p>
 <p>I added the <code>-E</code> (call only the preprocessor, for those that don't know, the C and C++
@@ -116,7 +118,8 @@ Somehow, the server has g++-8 installed but not it's header files? I used <code>
 /usr/include/c++/7/iostream
 </span></pre>
 <p>And clang++ works :)</p>
-<h2 id="background">Background</h2>
+<h2 id="background"><a class="zola-anchor" href="#background" aria-label="Anchor link for: background">🔗</a>
+Background</h2>
 <p>It seems the cause of the issue is that clang++ does not come with it's own headers or
 runtime for C or C++. Instead it relies on other projects to providing these (usually gcc/g++
 for most Linux systems, or an alternative implementation like <a href="https://libcxx.llvm.org/">libc++</a>).
