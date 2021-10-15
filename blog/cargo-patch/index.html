@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
     <head>
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -11,9 +10,9 @@
       <title>Time For Crab 🦀</title>
 
       <!-- CSS -->
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;print.css" media="print">
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;poole.css">
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;hyde.css">
+      <link rel="stylesheet" href="https://gatowololo.github.io/print.css" media="print">
+      <link rel="stylesheet" href="https://gatowololo.github.io/poole.css">
+      <link rel="stylesheet" href="https://gatowololo.github.io/hyde.css">
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
       
@@ -40,11 +39,13 @@
                         
                         <li><a href="&#x2F;">About Me</a></li>
                         
-                        <li><a href="&#x2F;blog&#x2F;">Blog</a></li>
+                        <li><a href="&#x2F;resources&#x2F;aboutme&#x2F;omar_resume.pdf">CV</a></li>
                         
-                        <li><a href="&#x2F;publications">Publications</a></li>
+                        <li><a href="&#x2F;publications&#x2F;main">Publications</a></li>
                         
                         <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
+                        
+                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
                         
                         
                     </ul>
@@ -55,380 +56,143 @@
         <div class="content container">
           
 <div class="post">
-  <h1 class="post-title">Using Cargo [patch] to Override Dependencies</h1>
-  <span class="post-date"> Last updated: 22-02-2021</span>
-
-    <h3>Table Of Content</h3>
-    
-        <ul>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#summary">Summary</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#motivation">Motivation</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#cargo-patch">Cargo [patch]</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#patching-with-a-path-to-local-alt-dependency">Patching with a Path to Local alt Dependency</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#cargo-update">Cargo Update</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#patching-dependency-with-a-github-alt-dependency">Patching Dependency With a Github alt Dependency</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#patching-github-dependencies">Patching GitHub Dependencies</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#conclusion">Conclusion</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#footnotes">Footnotes</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/cargo-patch/#comments">Comments</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-        </ul>
-    
-
-  <p><em>Recommended Rust Skill</em>: <strong>Intermediate</strong> <sup class="footnote-reference"><a href="#1">1</a></sup></p>
-<h3 id="summary"><a class="zola-anchor" href="#summary" aria-label="Anchor link for: summary">🔗</a>
-Summary</h3>
-<p>Here we cover Cargo's useful mechanism for temporarily and easily overriding dependencies: <code>[patch]</code>. I found the official documentation quite terse. Making it difficult to use in situations more complicated than simple examples. So here, we motivate and show many scenarios. Finally, we point out various edge-cases and footguns beyond what the Cargo book covers. </p>
-<h3 id="motivation"><a class="zola-anchor" href="#motivation" aria-label="Anchor link for: motivation">🔗</a>
-Motivation</h3>
-<p>Cargo does a great job at managing Rust dependencies and most of the time <em>it just works</em>. However, there will come a time when we might need to modify the code for a dependency. The Cargo Book's section on <a href="https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html">Overriding Dependencies</a> does states several use cases. For example, our application relies on the <code>nix</code> crate (a crate for idiomatic Rust bindings around libc) but the esoteric libc function we need does not exist as of the latest <code>crates.io</code> version<sup class="footnote-reference"><a href="#2">2</a></sup>. <code>nix</code>'s source code is hosted on Github and let's assume the latest commit on master includes bindings for the function we need. How can we use this alternative (<code>alt</code>) version for our project until the changes make it to the next version on crates.io?</p>
-<h3 id="cargo-patch"><a class="zola-anchor" href="#cargo-patch" aria-label="Anchor link for: cargo-patch">🔗</a>
-Cargo <code>[patch]</code></h3>
-<p><code>[patch]</code><sup class="footnote-reference"><a href="#3">3</a></sup> allows us to temporarily<sup class="footnote-reference"><a href="#4">4</a></sup> specify an alternate (<code>alt</code>) version of a crate dependency. This will be usually be a <code>crates.io</code> dependency specified in our package's <a href="https://doc.rust-lang.org/cargo/reference/manifest.html">manifest file</a>, <code>Cargo.toml</code>. For example:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Our Cargo.toml
+  <h1 class="post-title">Patching Cargo Dependencies</h1>
+  <span class="post-date"> Last updated: 2020-02-03</span>
+  <p><em>Recommened Rust Skill</em>: <strong>Intermediate</strong> <sup class="footnote-reference"><a href="#1">1</a></sup></p>
+<h3 id="summary"><a class="zola-anchor" href="#summary" aria-label="Anchor link for: summary">🔗</a>Summary</h3>
+<p>Here we cover Cargo's patch mechanism for temporarily changing and easily changing a dependency. We motivate it, show various examples, and point out edge-cases and footguns beyond what the Cargo book covers. I found the official documentation quite terse and took me a long time to handle some cases not mentioned in the documentation.</p>
+<h3 id="motivation"><a class="zola-anchor" href="#motivation" aria-label="Anchor link for: motivation">🔗</a>Motivation</h3>
+<p>Cargo does a great job at managing Rust dependencies and most of the time <em>it just works</em>. There will come a time when you might need to modify the code for a dependency. The Cargo Book's section on <a href="https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html">Overriding Dependencies</a> mentions several use cases. For example, your application relies on the <code>nix</code> crate but there is a feature you need that has not been added to the lastest cratio.io version<sup class="footnote-reference"><a href="#2">2</a></sup>. <code>nix</code>'s code is hosted on github and the lastest commit on master includes the bug fix, how can you use this github's version until the changes make it to the next version on crates.io?</p>
+<h3 id="cargo-patch"><a class="zola-anchor" href="#cargo-patch" aria-label="Anchor link for: cargo-patch">🔗</a>Cargo Patch</h3>
+<p>Cargo has a mechanism to handle these type of cases, Cargo patch. Patching subsumes the older mechanism <a href="https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-replace-section">Cargo replace</a><sup class="footnote-reference"><a href="#3">3</a></sup>. You can find <a href="https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html">the official documentation</a> on Cargo patch on the official Rust Book. Namely, Cargo patch allows you to temporarily<sup class="footnote-reference"><a href="#4">4</a></sup> use an alternative version of a crate dependency (we will call this <em>patched dependency</em>). This will be usually be a crates.io dependency specified in your <code>Cargo.toml</code> (the manifest):</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml"># Your Cargo.toml
 # ...
 
-</span><span style="color:#657b83;">[dependencies]
-</span><span style="color:#268bd2;">nix </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.17</span><span style="color:#839496;">&quot;
-</span><span style="color:#268bd2;">libc </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.2</span><span style="color:#839496;">&quot;
-</span><span style="color:#93a1a1;"># ...
-</span></pre>
-<p>Cargo defaults to downloading dependencies from crates.io when a package is built (later we cover examples of patching non-crates.io dependencies).</p>
-<p>Why have <code>[patch]</code> at all? Why not manually override the dependencies by changing the <code>nix = &quot;0.17&quot;</code> line directly? Patching is <strong>transitive</strong> and Cargo ensures dependencies are transitively patched if they depend on the patched dependency. Larger projects may be separated into separate crates using <a href="https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html">workspaces</a>, each containing their own manifest file. <code>[patch]</code> allows us to change a <strong>single location</strong>. Namely, the top level manifest file. <code>[patch]</code> subsumes the older <a href="https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-replace-section"><code>[replace]</code></a> <sup class="footnote-reference"><a href="#5">5</a></sup> mechanism which should no longer be used.</p>
-<h3 id="patching-with-a-path-to-local-alt-dependency"><a class="zola-anchor" href="#patching-with-a-path-to-local-alt-dependency" aria-label="Anchor link for: patching-with-a-path-to-local-alt-dependency">🔗</a>
-Patching with a Path to Local <code>alt</code> Dependency</h3>
-<p>In the most common case, patching is as simple as adding a <code>[patch]</code> section to our <code>Cargo.toml</code>. Here we will be patching <code>nix</code>:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Cargo.toml
+[dependencies]
+nix = &quot;0.17&quot;
+libc = &quot;0.2&quot;
+# ...
+</code></pre>
+<p>These dependencies are automatically downloaded from crates.io when your project is built. We will also look at examples when not using crates.io. The patched dependency can be a local version or a github version (others are supported as well).</p>
+<h3 id="patching-dependency-with-a-local-version"><a class="zola-anchor" href="#patching-dependency-with-a-local-version" aria-label="Anchor link for: patching-dependency-with-a-local-version">🔗</a>Patching Dependency With a Local Version</h3>
+<p>For the simple case, patching a dependency is as simple as adding a <code>[patch]</code> section in your <code>Cargo.toml</code> file. Here we will be patching the great <code>Nix</code> crate:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml"># Your Cargo.toml
 # ...
 
-</span><span style="color:#657b83;">[dependencies]
-</span><span style="color:#268bd2;">nix </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.17</span><span style="color:#839496;">&quot;
-</span><span style="color:#268bd2;">libc </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.2</span><span style="color:#839496;">&quot;
+[dependencies]
+nix = &quot;0.17&quot;
+libc = &quot;0.2&quot;
 
-</span><span style="color:#657b83;">[patch.crates-io]
-</span><span style="color:#268bd2;">nix </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">path </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">/path/to/local/version/nix</span><span style="color:#839496;">&quot; </span><span style="color:#657b83;">}
-
-</span></pre>
-<p>There are a few things to unpack here. I had never seen the <code>.crate-io</code> or <code>{ path = .. }</code> syntax before. This syntax is specified in the TOML format. While not necessary, see here for a quick <a href="https://learnxinyminutes.com/docs/toml/">overview</a> of TOML. We may also use a relative path like <code>nix = { path = &quot;../alt/nix/&quot; }</code> for patching. Our path should point to the top level directory containing the <code>Cargo.toml</code> file of <code>alt</code> dependency.</p>
-<p>In general, using filesystem paths is not very portable. This will only work with our set up, which others must manually replicate if they want to use our patch. A better approach is to use <code>alt</code> versions hosted online, e.g. Github.</p>
-<h3 id="cargo-update"><a class="zola-anchor" href="#cargo-update" aria-label="Anchor link for: cargo-update">🔗</a>
-Cargo Update</h3>
-<p>Above, we were purposely ambiguous about where the <code>alt</code> version came from. For the patch to take effect, our <code>alt</code> version of <code>nix</code> must match or be higher than the version on the manifest. Otherwise Cargo will helpfully tell us the patch will not be used. Using a real example:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">Patch `mio v0.6.22 (https://github.com/servo/mio.git?branch=servo-mio-0.6.22#f640fd66)` was not used in the crate graph.
-Check that the patched package version and available features are compatible
-with the dependency requirements. If the patch has a different version from
-what is locked in the Cargo.lock file, run `cargo update` to use the new
-version. This may also occur with an optional dependency that is not enabled.
-
-</span></pre>
-<p>Unfortunately, an in depth look at the <code>Cargo.lock</code> file and the Cargo update command is beyond the scope of this blog. See <a href="https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html">here</a> for the official documentation. A <code>cargo update</code> is not always necessary for the patch to work. When exactly it is needed remains unclear to me. Furthermore, it is not always possible <code>cargo update</code> depending on the semver constraints of our dependencies... but thankfully is not common in practice.</p>
-<h4 id="crab-sharp-edge-picking-the-correct-package-version"><a class="zola-anchor" href="#crab-sharp-edge-picking-the-correct-package-version" aria-label="Anchor link for: crab-sharp-edge-picking-the-correct-package-version">🔗</a>
-🦀 Sharp Edge: Picking the Correct Package Version</h4>
-<p>It is often insufficient to <code>git clone</code> the <code>nix</code> source code from <a href="https://github.com/nix-rust/nix">github.com/nix-rust/nix</a> as this will simply clone the latest version of the code. If this latest version is significantly newer (e.g. a new major version), it may be incompatible without major changes to our code.</p>
-<p>Some projects provide releases or tagged commits corresponding to crates.io versions. However, <strong>in general there is no easy way to find which commit belongs to a specific version</strong>. Event the <a href="https://github.com/JanLikar/cargo-clone/">cargo clone</a> subcommand <a href="https://github.com/JanLikar/cargo-clone/issues/17">seems to have problems</a> if we want an exact version.</p>
-<p>Cargo fetches the source code of all dependencies when building a package, so my current solution is to copy the locally downloaded version of the crate. My IDE tells me the source code for <code>nix</code> is stored in <code>~/.cargo/registry/src/github.com-1ecc6299db9ec823/nix-0.17.0/</code><sup class="footnote-reference"><a href="#6">6</a></sup>. We can copy this directory to modify the code for our patching.</p>
-<p>To exacerbate the difficulty, a dependency entry in the manifest (e.g. <code>nix = &quot;0.17&quot;</code>) is generally not enough to tell what version of a package Cargo is actually using. Cargo has some choice when picking version. See <a href="https://doc.rust-lang.org/cargo/reference/resolver.html">Dependency Resolution</a> for more information. Instead, consult the <code>Cargo.lock</code> file see the exact version the resolver picked for our code:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Cargo.lock file
+[patch.crates-io]
+nix = { path = &quot;&#x2F;path&#x2F;to&#x2F;local&#x2F;version&#x2F;nix&quot; }
+</code></pre>
+<p>Even in the simplest case there are a few things to unpack. I had never seen the <code>.crate-io</code> or <code>{ path = .. }</code> syntax before. I just accept the syntax as-is. This syntax comes from the TOML file format. See here for a quick <a href="https://learnxinyminutes.com/docs/toml/">overview</a>. Depending on your specific need, your local version of nix must match the version
+on the manifest or be higher.</p>
+<p>Notice it is not enough to simply <code>git clone</code> the Nix source code from <a href="https://github.com/nix-rust/nix">github.com/nix-rust/nix</a> as this will pull the latest version on master. Some projects provide releases or tag commits corresponding to crate-io versions, but in general there is no easy way to find which commit belongs to the specific version. Event the <a href="https://github.com/JanLikar/cargo-clone/">cargo clone</a> subcommand <a href="https://github.com/JanLikar/cargo-clone/issues/17">seems to have problems</a> if you want an exact version. Cargo fetches the source code of all dependencies when building a package, so my current solution is to copy this downloaded version of the crate. My IDE tells me the source code for Nix is stored in <code>~/.cargo/registry/src/github.com-1ecc6299db9ec823/nix-0.17.0/</code><sup class="footnote-reference"><a href="#5">5</a></sup>. I am then free to modify this copy and <code>patch</code> to its location.</p>
+<p>Patching with local versions is not very portable. If you push <code>my-crate</code> to GitHub so others may also work off your patch version, they must use exact path for this to work. A better approach is to use TODO</p>
+<h4 id="cargo-update"><a class="zola-anchor" href="#cargo-update" aria-label="Anchor link for: cargo-update">🔗</a>Cargo Update</h4>
+<h4 id="crab-sharp-edge-picking-the-correct-package-version"><a class="zola-anchor" href="#crab-sharp-edge-picking-the-correct-package-version" aria-label="Anchor link for: crab-sharp-edge-picking-the-correct-package-version">🔗</a>🦀 Sharp Edge: Picking the Correct Package Version</h4>
+<p>A dependency entry in the <code>Cargo.toml</code> file (e.g. <code>nix = &quot;0.17&quot;</code>) is generally not enough to tell what version of a package cargo is using as Cargo has some choice when picking version. See <a href="https://doc.rust-lang.org/cargo/reference/resolver.html">Dependency Resolution</a> for more information. Instead, consult the <code>Cargo.lock</code> file see the exact version the resolver picked for you code:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml"># Cargo.lock file
+...
+[[package]]
+name = &quot;nix&quot;
+version = &quot;0.17.0&quot;
+...
+</code></pre>
+<h3 id="patching-dependency-with-a-github-version"><a class="zola-anchor" href="#patching-dependency-with-a-github-version" aria-label="Anchor link for: patching-dependency-with-a-github-version">🔗</a>Patching Dependency With a Github Version</h3>
+<p>We can instead push modified dependency to github and have <code>cargo patch</code> use this version. On <code>cargo build</code>, cargo will automatically clone the source code from the master branch of my GitHub repository:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml"># Your Cargo.toml
 # ...
-</span><span style="color:#657b83;">[[package]]
-</span><span style="color:#268bd2;">name </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">nix</span><span style="color:#839496;">&quot;
-</span><span style="color:#268bd2;">version </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.17.0</span><span style="color:#839496;">&quot; </span><span style="color:#93a1a1;"># May be different from the version listed on the manifest.
-# ...
-</span></pre><h3 id="patching-dependency-with-a-github-alt-dependency"><a class="zola-anchor" href="#patching-dependency-with-a-github-alt-dependency" aria-label="Anchor link for: patching-dependency-with-a-github-alt-dependency">🔗</a>
-Patching Dependency With a Github <code>alt</code> Dependency</h3>
-<p>We can push modified dependency to Github and have <code>cargo patch</code> use this version. This way, Cargo will automatically download our patch when building the project. This is convenient for others who may be using our patch. </p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Our Cargo.toml
-# ...
-</span><span style="color:#657b83;">[dependencies]
-</span><span style="color:#268bd2;">nix </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.17</span><span style="color:#839496;">&quot;
-</span><span style="color:#268bd2;">libc </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.2</span><span style="color:#839496;">&quot;
 
-</span><span style="color:#657b83;">[patch.crates-io]
-</span><span style="color:#268bd2;">nix </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatowololo/nix</span><span style="color:#839496;">&quot; </span><span style="color:#657b83;">}
-</span></pre>
-<p>This tells cargo to use my personal version on the <code>nix</code>, which lives under my GitHub username <code>gatowololo/nix</code>. Cargo will automatically use the default branch.</p>
-<p>This presents its own set of problems, if we commit to<code>gatowololo/nix</code>'s what will happen next time someone does <code>cargo build</code>? This is once again handled by the <code>Cargo.lock</code> file. The first time we <code>cargo build</code> with a <code>[patch]</code> manifest section, Cargo will write relevant information to the project's <code>Cargo.lock</code> file:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">[[package]]
-</span><span style="color:#268bd2;">name </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">nix</span><span style="color:#839496;">&quot;
-</span><span style="color:#268bd2;">version </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">0.17.0</span><span style="color:#839496;">&quot;
-</span><span style="color:#268bd2;">source </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">git+https://github.com/gatoWololo/nix#3b8180c430fe838e4fd71b83e5f92db6386e5c57</span><span style="color:#839496;">&quot;
-</span></pre>
-<p>Here we can see Cargo specifies the commit hash <code>3b8180c</code> which was used for patching as well as the URL for my version of <code>nix</code>. If we are ever unsure whether Cargo is using our patch, we can check the <code>Cargo.lock</code> file for entries like:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">[[patch.unused]]
-name = &quot;mio&quot;
-version = &quot;0.6.22&quot;
-source = &quot;git+https://github.com/servo/mio.git?branch=servo-mio-0.6.22#f640fd662db03026ca2a1b21ac1e161ec6f8150b&quot;
+[dependencies]
+nix = &quot;0.17&quot;
+libc = &quot;0.2&quot;
 
-</span></pre>
-<p>Notice the <code>[[patch.unused]]</code> section.</p>
-<h4 id="using-a-different-branch"><a class="zola-anchor" href="#using-a-different-branch" aria-label="Anchor link for: using-a-different-branch">🔗</a>
-Using a Different Branch</h4>
-<p>By default <code>Cargo</code> pulls our code from the default branch, we can specify what branch to use as well:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">[patch.crates-io]
-</span><span style="color:#268bd2;">nix </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatowololo/nix</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">branch</span><span style="color:#657b83;">=</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">my-dev</span><span style="color:#839496;">&quot; </span><span style="color:#657b83;">}
-</span></pre>
-<p>This may not always work. See <a href="https://gatowololo.github.io/blog/cargo-patch/#crab-sharp-edge-patching-with-different-branch">below example</a>.</p>
-<h4 id="specifying-commit-hash"><a class="zola-anchor" href="#specifying-commit-hash" aria-label="Anchor link for: specifying-commit-hash">🔗</a>
-Specifying Commit Hash</h4>
-<p>We can also specify the commit to use as well!</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">[patch.crates-io]
-</span><span style="color:#268bd2;">nix </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatowololo/nix</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">rev</span><span style="color:#657b83;">=</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">3b8180c</span><span style="color:#839496;">&quot; </span><span style="color:#657b83;">}
-</span></pre><h4 id="crab-sharp-edge-cargo-lock-and-version-control"><a class="zola-anchor" href="#crab-sharp-edge-cargo-lock-and-version-control" aria-label="Anchor link for: crab-sharp-edge-cargo-lock-and-version-control">🔗</a>
-🦀 Sharp Edge: <code>Cargo.lock</code> and Version Control</h4>
-<p>If our project <a href="https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries">does not check <code>Cargo.lock</code> into version control</a>, <code>cargo build</code> will use the latest version on <code>master</code>. This irreproducible behavior is probably <strong>not</strong> what you want!</p>
-<h3 id="patching-github-dependencies"><a class="zola-anchor" href="#patching-github-dependencies" aria-label="Anchor link for: patching-github-dependencies">🔗</a>
-Patching GitHub Dependencies</h3>
+[patch.crates-io]
+nix = { git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatowololo&#x2F;nix&quot; }
+</code></pre>
+<p>This tells cargo to use my version on the nix library, living under my GitHub username: <code>gatowololo/nix</code>. This presents its own set of problems, if we update <code>gatowololo/nix</code>'s master branch what will happen next time someone does <code>cargo build</code>? This is once again handled by the <code>Cargo.lock</code> file. The first time you <code>cargo build</code> with a patch manifest section cargo will write relevant information to the projects <code>Cargo.lock</code> file:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml">[[patch.unused]]
+name = &quot;nix&quot;
+version = &quot;0.17.0&quot;
+source = &quot;git+https:&#x2F;&#x2F;github.com&#x2F;gatoWololo&#x2F;nix#3b8180c430fe838e4fd71b83e5f92db6386e5c57&quot;
+</code></pre>
+<p>Here we can see Cargo specifies the commit hash <code>3b8180c</code> which was used for patching as well as the URL for my version of Nix. If you are ever unsure if Cargo is using your patch, you can check here.</p>
+<h4 id="using-different-branch"><a class="zola-anchor" href="#using-different-branch" aria-label="Anchor link for: using-different-branch">🔗</a>Using Different Branch</h4>
+<p>By default <code>Cargo</code> pulls your code from the default branch, you can specify what branch to use as well:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml">[patch.crates-io]
+nix = { git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatowololo&#x2F;nix&quot;, branch=&quot;my-dev&quot; }
+</code></pre>
+<h4 id="specifying-commit-hash"><a class="zola-anchor" href="#specifying-commit-hash" aria-label="Anchor link for: specifying-commit-hash">🔗</a>Specifying Commit Hash</h4>
+<p>You can also specify the commit to use:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml">[patch.crates-io]
+nix = { git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatowololo&#x2F;nix&quot;, rev=&quot;3b8180c&quot; }
+</code></pre>
+<h4 id="crab-sharp-edge-cargo-lock-and-version-control"><a class="zola-anchor" href="#crab-sharp-edge-cargo-lock-and-version-control" aria-label="Anchor link for: crab-sharp-edge-cargo-lock-and-version-control">🔗</a>🦀 Sharp Edge: <code>Cargo.lock</code> and Version Control</h4>
+<p>If your <code>my-crate</code> project <a href="https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries">does not check <code>Cargo.lock</code> into version control</a>, <code>cargo build</code> will use the latest version on <code>master</code>. This irreproducible behavior is probably <strong>not</strong> what you want!</p>
+<h3 id="patching-github-dependencies"><a class="zola-anchor" href="#patching-github-dependencies" aria-label="Anchor link for: patching-github-dependencies">🔗</a>Patching GitHub Dependencies</h3>
 <p>Not all cargo crates live on crates.io. What happens when a dependency is itself specified as a git dependency? Like:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Cargo.toml
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml"># Cargo.toml
 # ...
-</span><span style="color:#657b83;">[dependencies]
-</span><span style="color:#268bd2;">servo-media </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/servo/media</span><span style="color:#839496;">&quot; </span><span style="color:#657b83;">}
-</span></pre>
+[dependencies]
+servo-media = { git = &quot;https:&#x2F;&#x2F;github.com&#x2F;servo&#x2F;media&quot; }
+</code></pre>
 <p>We can patch such a dependency like so:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Cargo.toml
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml"># Cargo.toml
 # ...
-</span><span style="color:#657b83;">[patch.</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/servo/media</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">]
-</span><span style="color:#268bd2;">servo-media </span><span style="color:#657b83;">= {</span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatoWololo/servo-media</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span></pre>
-<p>We specify the URL as <code>[patch.&quot;URL&quot;]</code>. This patch replaces <code>servo/media</code> with my own version <code>gatowololo/servo-media</code> on Github.</p>
-<h4 id="crab-sharp-edge-patching-with-different-branch"><a class="zola-anchor" href="#crab-sharp-edge-patching-with-different-branch" aria-label="Anchor link for: crab-sharp-edge-patching-with-different-branch">🔗</a>
-🦀 Sharp Edge: Patching with Different Branch</h4>
-<p>What happens if we want to patch a git dependency using the same repository but a different branch? Like so:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Cargo.toml
+[patch.&quot;https:&#x2F;&#x2F;github.com&#x2F;servo&#x2F;media&quot;]
+servo-media = {git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatoWololo&#x2F;servo-media&quot;}
+</code></pre>
+<p>We specify the URL in as <code>[patch.&quot;URL&quot;]</code>. This patch replaces <code>servo/media</code> with my own version <code>gatowololo/servo-media</code> on Github.</p>
+<h4 id="crab-sharp-edge-patching-with-different-branch"><a class="zola-anchor" href="#crab-sharp-edge-patching-with-different-branch" aria-label="Anchor link for: crab-sharp-edge-patching-with-different-branch">🔗</a>🦀 Sharp Edge: Patching with Different Branch</h4>
+<p>What happens if you want to patch a git dependency using the same repository but a different branch? Like so:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml"># Cargo.toml
 # ...
-</span><span style="color:#657b83;">[dependencies]
-</span><span style="color:#268bd2;">rr_channel </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatowololo/rr_channel</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span><span style="color:#93a1a1;"># ...
-</span><span style="color:#657b83;">[patch.</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatowololo/rr_channel</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">]
-</span><span style="color:#268bd2;">rr_channel </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatoWololo/rr_channel</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">branch </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">servo_development</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span></pre>
+[dependencies]
+rr_channel = { git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatowololo&#x2F;rr_channel&quot;}
+# ...
+[patch.&quot;https:&#x2F;&#x2F;github.com&#x2F;gatowololo&#x2F;rr_channel&quot;]
+rr_channel = { git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatoWololo&#x2F;rr_channel&quot;, branch = &quot;servo_development&quot;}
+</code></pre>
 <p>Here we attempt to test a change on our <code>servo_development</code> branch in the same GitHub repository. When running <code>cargo build</code> we get the following error however:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">error: failed to resolve patches for `https://github.com/gatowololo/rr_channel`
+<pre><code>error: failed to resolve patches for `https:&#x2F;&#x2F;github.com&#x2F;gatowololo&#x2F;rr_channel`
 
 Caused by:
-  patch for `rr_channel` in `https://github.com/gatowololo/rr_channel` points to the same source, but patches must point to different sources
-</span></pre>
-<p>This is a known <a href="https://github.com/rust-lang/cargo/issues/5478">issue</a>. The current workaround is to add extra <code>/</code> to the URL of the patch so Cargo thinks the patch points to a different source but actually resolves to the same URL:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># Cargo.toml
+  patch for `rr_channel` in `https:&#x2F;&#x2F;github.com&#x2F;gatowololo&#x2F;rr_channel` points to the same source, but patches must point to different sources
+</code></pre>
+<p>This is a known <a href="https://github.com/rust-lang/cargo/issues/5478">issue</a>. The current workaround is to add extra '/' to the URL of the patch so Cargo thinks it is the patch points to a different source but resolves to the same path:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml"># Cargo.toml
 # ...
-</span><span style="color:#657b83;">[patch.</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatowololo/rr_channel</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">]
-</span><span style="color:#93a1a1;"># Notice extra &#39;/&#39; on URL.
-</span><span style="color:#268bd2;">rr_channel </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https:///github.com//gatoWololo/rr_channel</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">branch </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">servo_development</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span></pre>
+[patch.&quot;https:&#x2F;&#x2F;github.com&#x2F;gatowololo&#x2F;rr_channel&quot;]
+# Notice extra &#x27;&#x2F;&#x27; on URL.
+rr_channel = { git = &quot;https:&#x2F;&#x2F;&#x2F;github.com&#x2F;&#x2F;gatoWololo&#x2F;rr_channel&quot;, branch = &quot;servo_development&quot;}
+</code></pre>
 <p>This works but creates a new foot gun, see <a href="https://gatowololo.github.io/blog/cargo-patch/#crab-sharp-edge-git-dependency-with-extra">Sharp Edge: Git Dependency with Extra <code>/</code></a> below.</p>
-<h4 id="crab-sharp-edge-workspaces"><a class="zola-anchor" href="#crab-sharp-edge-workspaces" aria-label="Anchor link for: crab-sharp-edge-workspaces">🔗</a>
-🦀 Sharp Edge: Workspaces</h4>
-<p>Patching crates with workspaces works slightly differently, and is not obvious. Patching a Git dependency is straightforward enough. Notice <code>servo-media-gstreamer</code> and <code>servo-media-dummy</code> are other crates in <code>servo media</code> package:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">[patch.</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/servo/media</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">]
-</span><span style="color:#268bd2;">servo-media </span><span style="color:#657b83;">= {</span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatoWololo/servo-media</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span><span style="color:#268bd2;">servo-media-gstreamer </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatoWololo/servo-media</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span><span style="color:#268bd2;">servo-media-dummy </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatoWololo/servo-media</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span></pre>
-<p>Notice all patches point to the same <code>https://github.com/gatoWololo/servo-media</code> URL. The behavior for patching <code>servo-media</code> with a local <code>alt</code> dependency is different though. When patching other crates in the package we must specify the path not to the root of the package, but down to the individual crate roots:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">[patch.</span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/servo/media</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">]
-</span><span style="color:#268bd2;">servo-media </span><span style="color:#657b83;">= {</span><span style="color:#268bd2;">path </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">../media/servo-media</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span><span style="color:#268bd2;">servo-media-gstreamer </span><span style="color:#657b83;">= {</span><span style="color:#268bd2;">path </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">../media/backends/gstreamer</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span><span style="color:#268bd2;">servo-media-dummy </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">path </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">../media/backends/dummy</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span></pre><h4 id="crab-sharp-edge-git-dependency-with-extra"><a class="zola-anchor" href="#crab-sharp-edge-git-dependency-with-extra" aria-label="Anchor link for: crab-sharp-edge-git-dependency-with-extra">🔗</a>
-🦀 Sharp Edge: Git Dependency with Extra <code>/</code></h4>
-<p>Using the extra <code>/</code> trick shown <a href="https://gatowololo.github.io/blog/cargo-patch/#crab-sharp-edge-patching-with-different-branch">above</a> is useful but can lead to a different error. If our code is made of different crates each containing their own manifest:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># crate_a/Cargo.toml
-# ...
-</span><span style="color:#657b83;">[dependencies]
-</span><span style="color:#268bd2;">rr_channel </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https://github.com/gatoWololo/rr_channel</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span></pre>
-<p>And:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#93a1a1;"># crate_b/Cargo.toml
-# ...
-</span><span style="color:#657b83;">[dependencies]
-</span><span style="color:#268bd2;">rr_channel </span><span style="color:#657b83;">= { </span><span style="color:#268bd2;">git </span><span style="color:#657b83;">= </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">https:///github.com//gatoWololo/rr_channel</span><span style="color:#839496;">&quot;</span><span style="color:#657b83;">}
-</span></pre>
-<p>Attempting to patch in the root manifest file led to two incompatible versions of <code>rr_channel</code> being used. Why was this happening? Notice the git URL for <code>crate_b/Cargo.toml</code> accidentally has extra <code>/</code>! So <code>rr_channel</code> was only getting patched in the first instance! Using the <code>cargo tree</code> command proved invaluable for finding the offending crate's manifest.</p>
-<h3 id="conclusion"><a class="zola-anchor" href="#conclusion" aria-label="Anchor link for: conclusion">🔗</a>
-Conclusion</h3>
-<p>Patching is a powerful and very useful mechanism. Beware of the many sharp edges. I believe Cargo is extremely well designed, but dependency management is complicated as Cargo must handle many use cases.</p>
-<h3 id="footnotes"><a class="zola-anchor" href="#footnotes" aria-label="Anchor link for: footnotes">🔗</a>
-Footnotes</h3>
-<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
-<p>One common feedback about the Rust ecosystem is the lack of intermediate and advanced documentation and blogs. I have several half-finished blogs because they were ambitious, so this blog will assume familiarity with <code>Cargo</code>, <code>Cargo.toml</code>, and <code>Cargo.lock</code>. And roughly, how Rust deals with dependencies. In the future I may come back and do a <code>Cargo.toml</code> and <code>Cargo.lock</code> in depth blog.</p>
-</div>
-<div class="footnote-definition" id="2"><sup class="footnote-definition-label">2</sup>
-<p><a href="https://crates.io/">crates.io</a> is Rust's official crate repository. By default all crate dependencies are downloaded from here on <code>cargo build</code>.</p>
-</div>
-<div class="footnote-definition" id="3"><sup class="footnote-definition-label">3</sup>
-<p><a href="https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html">Here</a> is the official Cargo Book documentation on <code>[patch]</code>.</p>
-</div>
-<div class="footnote-definition" id="4"><sup class="footnote-definition-label">4</sup>
-<p>While Cargo replace is not technically deprecated. The <a href="https://doc.rust-lang.org/edition-guide/rust-2018/cargo-and-crates-io/replacing-dependencies-with-patch.html">docs</a> state &quot;while we don't intend to deprecate or remove [replace], you should prefer [patch] in all circumstances&quot;. So we should always use Cargo patch.</p>
-</div>
-<div class="footnote-definition" id="5"><sup class="footnote-definition-label">5</sup>
-<p>There is nothing stopping us from leaving the <code>[patch]</code> permanently, but it does not seem to be good practice.</p>
-</div>
-<div class="footnote-definition" id="6"><sup class="footnote-definition-label">6</sup>
-<p>The structure of the <code>~/.cargo/</code> directory is unclear to me. So I omit attempting to explain finding this path.</p>
-</div>
-<h3 id="comments"><a class="zola-anchor" href="#comments" aria-label="Anchor link for: comments">🔗</a>
-Comments</h3>
-<p>Please leave comments below. You can also leave comments directly in the relevant <a href="https://github.com/gatoWololo/PersonalWebsite/issues">Github Issue</a> and it will show up below.</p>
+<h4 id="crab-sharp-edge-virtual-workspaces"><a class="zola-anchor" href="#crab-sharp-edge-virtual-workspaces" aria-label="Anchor link for: crab-sharp-edge-virtual-workspaces">🔗</a>🦀 Sharp Edge: Virtual Workspaces</h4>
+<p>Cargo enables crates to be broken down into multiple crates using <a href="https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html">Cargo Workspaces</a>. Patching crates with workspaces is slightly different.</p>
+<p>Patching with the target being a git source is straightforward enough. Notice servo-media-gstreamer and servo-media-dummy are (sub?? TODO ) crates in servo media:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml">[patch.&quot;https:&#x2F;&#x2F;github.com&#x2F;servo&#x2F;media&quot;]
+servo-media = {git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatoWololo&#x2F;servo-media&quot;}
+servo-media-gstreamer = { git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatoWololo&#x2F;servo-media&quot;}
+servo-media-dummy = { git = &quot;https:&#x2F;&#x2F;github.com&#x2F;gatoWololo&#x2F;servo-media&quot;}
+</code></pre>
+<p>The behavior for patching <code>servo-media</code> with a local copy is different. When patching subcrates you must specify the path not to the room of the package, but to the subcrate:</p>
+<pre data-lang="toml" class="language-toml "><code class="language-toml" data-lang="toml">[patch.&quot;https:&#x2F;&#x2F;github.com&#x2F;servo&#x2F;media&quot;]
+servo-media = {path = &quot;..&#x2F;media&#x2F;servo-media&quot;}
+servo-media-gstreamer = {path = &quot;..&#x2F;media&#x2F;backends&#x2F;gstreamer&quot;}
+servo-media-dummy = { path = &quot;..&#x2F;media&#x2F;backends&#x2F;dummy&quot;}
+</code></pre>
+<h4 id="crab-sharp-edge-git-dependency-with-extra"><a class="zola-anchor" href="#crab-sharp-edge-git-dependency-with-extra" aria-label="Anchor link for: crab-sharp-edge-git-dependency-with-extra">🔗</a>🦀 Sharp Edge: Git Dependency with Extra <code>/</code></h4>
+<p>Using the extra <code>/</code> trick as shown above (TODO link) is helpful but can lead to a different error.</p>
+<h4 id="footnotes"><a class="zola-anchor" href="#footnotes" aria-label="Anchor link for: footnotes">🔗</a>Footnotes</h4>
+<p><sup class="footnote-reference"><a href="#1">1</a></sup> One common feedback about the Rust ecosystem is the lack of intermediate and advanced documentation and blogs. I have several half-finished blogs because they were ambitious, so this blog will assume familiarity with <code>Cargo</code>, the <code>Cargo.toml</code> file, and roughly how Rust deals with dependencies. In the future I may come back and do a <code>Cargo.toml</code> and <code>Cargo.lock</code> in depth blog.</p>
+<p><sup class="footnote-reference"><a href="#2">2</a></sup> <a href="https://crates.io/">crates.io</a> is Rust's offical crate repository, and all crate dependencies are all downloaded from here by default on <code>cargo build</code>.</p>
+<p><sup class="footnote-reference"><a href="#3">3</a></sup> While Cargo replace is not technically replicated. The <a href="https://doc.rust-lang.org/edition-guide/rust-2018/cargo-and-crates-io/replacing-dependencies-with-patch.html">docs</a> mention &quot;&quot;while we don't intend to deprecate or remove [replace], you should prefer [patch] in all circumstances&quot;. So you should always use Cargo patch.</p>
+<p><sup class="footnote-reference"><a href="#4">4</a></sup> There is nothing stopping you from leaving the <code>[patch]</code> permanently, but it does not seem to be good practice.</p>
+<p><sup class="footnote-reference"><a href="#5">5</a></sup> The structure of the <code>~/.cargo/</code> directory is unclear to me. So I omit atempting to explain this path.</p>
 
-
-    <script src="https://utteranc.es/client.js"
-            repo="gatowololo/PersonalWebsite"
-            issue-term="pathname"
-            theme="github-light"
-            crossorigin="anonymous"
-            async>
-    </script>
 </div>
-
 
         </div>
     </body>

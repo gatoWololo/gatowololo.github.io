@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
     <head>
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -11,9 +10,9 @@
       <title>Time For Crab 🦀</title>
 
       <!-- CSS -->
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;print.css" media="print">
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;poole.css">
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;hyde.css">
+      <link rel="stylesheet" href="https://gatowololo.github.io/print.css" media="print">
+      <link rel="stylesheet" href="https://gatowololo.github.io/poole.css">
+      <link rel="stylesheet" href="https://gatowololo.github.io/hyde.css">
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
       
@@ -40,11 +39,13 @@
                         
                         <li><a href="&#x2F;">About Me</a></li>
                         
-                        <li><a href="&#x2F;blog&#x2F;">Blog</a></li>
+                        <li><a href="&#x2F;resources&#x2F;aboutme&#x2F;omar_resume.pdf">CV</a></li>
                         
-                        <li><a href="&#x2F;publications">Publications</a></li>
+                        <li><a href="&#x2F;publications&#x2F;main">Publications</a></li>
                         
                         <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
+                        
+                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
                         
                         
                     </ul>
@@ -56,31 +57,8 @@
           
 <div class="post">
   <h1 class="post-title">Ptrace and You</h1>
-  <span class="post-date"> Last updated: 19-06-2018</span>
-
-    <h3>Table Of Content</h3>
-    
-        <ul>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/ptraceintro/#ptrace-you-a-comprehensive-overview-of-ptrace">Ptrace &amp; You: A comprehensive overview of ptrace</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-        </ul>
-    
-
-  <h2 id="ptrace-you-a-comprehensive-overview-of-ptrace"><a class="zola-anchor" href="#ptrace-you-a-comprehensive-overview-of-ptrace" aria-label="Anchor link for: ptrace-you-a-comprehensive-overview-of-ptrace">🔗</a>
-Ptrace &amp; You: A comprehensive overview of ptrace</h2>
+  <span class="post-date"> Last updated: 2018-06-19</span>
+  <h2 id="ptrace-you-a-comprehensive-overview-of-ptrace"><a class="zola-anchor" href="#ptrace-you-a-comprehensive-overview-of-ptrace" aria-label="Anchor link for: ptrace-you-a-comprehensive-overview-of-ptrace">🔗</a>Ptrace &amp; You: A comprehensive overview of ptrace</h2>
 <p>Our current project involves heavy use of <code>ptrace</code>. While <code>man 2 ptrace</code> offers
 an in depth technical description, it is very difficult to follow for beginners (hence all
 the introduction to <code>ptrace</code> blogs around). While these blogs helped me get started, I feel
@@ -95,16 +73,14 @@ enough to cover even the main functionality of <code>ptrace</code>. So this is a
 <li><a href="https://blog.nelhage.com/2010/08/write-yourself-an-strace-in-70-lines-of-code/">Write you an strace in 70 lines of code</a></li>
 <li><a href="https://www.cyphar.com/blog/post/20160703-remainroot-ptrace-hell">Adventures into ptrace(2) Hell</a></li>
 </ul>
-<h3 id="what-is-ptrace"><a class="zola-anchor" href="#what-is-ptrace" aria-label="Anchor link for: what-is-ptrace">🔗</a>
-What is ptrace?</h3>
+<h3 id="what-is-ptrace"><a class="zola-anchor" href="#what-is-ptrace" aria-label="Anchor link for: what-is-ptrace">🔗</a>What is ptrace?</h3>
 <p>Ptrace is a Linux system call which allows a process (the <em>tracer</em>) to trace
 another process (the <em>tracee</em>) through <code>ptrace</code>, the tracer can intercept events in the
 <em>tracee</em> such as: system calls, signals, execves, and more.</p>
 <p>The <em>tracer</em> can also read and write to arbitrary locations in: program memory, or CPU
 registers, of the <em>tracee</em>. This functionality is extremely powerful, programs such as
 <code>gdb</code> and <code>strace</code> are powered by <code>ptrace</code>!</p>
-<h3 id="ptrace-at-the-kernel-level"><a class="zola-anchor" href="#ptrace-at-the-kernel-level" aria-label="Anchor link for: ptrace-at-the-kernel-level">🔗</a>
-Ptrace at the kernel level</h3>
+<h3 id="ptrace-at-the-kernel-level"><a class="zola-anchor" href="#ptrace-at-the-kernel-level" aria-label="Anchor link for: ptrace-at-the-kernel-level">🔗</a>Ptrace at the kernel level</h3>
 <p>From the <code>ptrace</code> <a href="https://linux.die.net/man/2/ptrace">man page</a>,
 &quot;The ptrace API (ab)uses the standard UNIX parent/child  signaling  over  waitpid(2).&quot;</p>
 <p>Ptrace, in some ways, replaces the <em>tracee</em>'s true parent with our <em>tracer</em>. When one
@@ -112,26 +88,24 @@ of many ptrace-events happens, the kernel puts the <em>tracee</em> in a stopped 
 the message to the <em>tracer</em>, the tracer may perform arbitrary computation here. The
 <em>tracer</em> then sends one of several <code>ptrace</code> continue events through a <code>ptrace</code> system call,
 the kernel allows the stopped <em>tracee</em> to run once more.</p>
-<h3 id="ptrace-overhead"><a class="zola-anchor" href="#ptrace-overhead" aria-label="Anchor link for: ptrace-overhead">🔗</a>
-Ptrace overhead</h3>
+<h3 id="ptrace-overhead"><a class="zola-anchor" href="#ptrace-overhead" aria-label="Anchor link for: ptrace-overhead">🔗</a>Ptrace overhead</h3>
 <p>Ptrace is not known to be fast, and incurs significant overhead. Surprisingly,
 I have not been able to find any report/publication quantifying the overhead of <code>ptrace</code>.
 However, a very rough test, running a simple for loop <em>n</em> times (for a sufficiently
 large <em>n</em>), doing a trivial system call, like <code>getpid()</code>:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">unistd.h</span><span style="color:#839496;">&gt;
-</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">stdio.h</span><span style="color:#839496;">&gt;
-</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">stdint.h</span><span style="color:#839496;">&gt;
-</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">sys/syscall.h</span><span style="color:#839496;">&gt;
+<pre data-lang="C" class="language-C "><code class="language-C" data-lang="C">#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;sys&#x2F;syscall.h&gt;
 
-</span><span style="color:#268bd2;">int </span><span style="color:#b58900;">main</span><span style="color:#657b83;">(){
-  </span><span style="color:#859900;">for</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">int</span><span style="color:#657b83;"> i = </span><span style="color:#6c71c4;">0</span><span style="color:#657b83;">; i &lt; </span><span style="color:#6c71c4;">10000000</span><span style="color:#657b83;">; i++){
-    </span><span style="color:#268bd2;">int</span><span style="color:#657b83;"> res = </span><span style="color:#268bd2;">syscall</span><span style="color:#657b83;">(SYS_getpid);
+int main(){
+  for(int i = 0; i &lt; 10000000; i++){
+    int res = syscall(SYS_getpid);
   }
 
-  </span><span style="color:#859900;">return </span><span style="color:#6c71c4;">0</span><span style="color:#657b83;">;
+  return 0;
 }
-</span></pre>
+</code></pre>
 <p>On my laptop, this program takes 0.82 seconds of user time (averaged from 3 runs using the <code>time</code>
 command). While ptraced, it takes about 13.18 seconds, a 15x slowdown. Note this
 is a worst case scenario when a program continuously calls many system calls. <code>getpid()</code>
@@ -145,12 +119,10 @@ to the cost, system calls are intercepted once before the system call is execute
 <em>pre-hook</em> and once after the system call, in the <em>post-hook</em>. Thus we can see where the
 overhead comes from. (In a future blog, we will see how using <code>seccomp + bpf + ptrace</code>, we
 can mitigate this overhead, and the number of context switches).</p>
-<h3 id="using-ptrace"><a class="zola-anchor" href="#using-ptrace" aria-label="Anchor link for: using-ptrace">🔗</a>
-Using ptrace</h3>
+<h3 id="using-ptrace"><a class="zola-anchor" href="#using-ptrace" aria-label="Anchor link for: using-ptrace">🔗</a>Using ptrace</h3>
 <p>Let's have a look at the <code>ptrace</code> system call API:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#268bd2;">long </span><span style="color:#b58900;">ptrace</span><span style="color:#657b83;">(</span><span style="color:#268bd2;">enum</span><span style="color:#657b83;"> __ptrace_request </span><span style="color:#268bd2;">request</span><span style="color:#657b83;">, </span><span style="color:#859900;">pid_t </span><span style="color:#268bd2;">pid</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">void </span><span style="color:#859900;">*</span><span style="color:#268bd2;">addr</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">void </span><span style="color:#859900;">*</span><span style="color:#268bd2;">data</span><span style="color:#657b83;">);
-</span></pre>
+<pre data-lang="C" class="language-C "><code class="language-C" data-lang="C">long ptrace(enum __ptrace_request request, pid_t pid, void *addr, void *data);
+</code></pre>
 <p>As we will see, a lot of functionality and complexity is packed into this API.</p>
 <ul>
 <li>
@@ -170,8 +142,7 @@ is some value we wish <code>ptrace</code> to use.</p>
 </li>
 </ul>
 <p>In the next section we will use <code>ptrace</code> to trace the system calls of an arbitrary process.</p>
-<h3 id="future-ptrace-blog-posts"><a class="zola-anchor" href="#future-ptrace-blog-posts" aria-label="Anchor link for: future-ptrace-blog-posts">🔗</a>
-Future Ptrace Blog Posts</h3>
+<h3 id="future-ptrace-blog-posts"><a class="zola-anchor" href="#future-ptrace-blog-posts" aria-label="Anchor link for: future-ptrace-blog-posts">🔗</a>Future Ptrace Blog Posts</h3>
 <p>In the future I hope to also create blog posts for:</p>
 <ul>
 <li>System call tracing with <code>ptrace</code></li>
@@ -182,16 +153,7 @@ Future Ptrace Blog Posts</h3>
 <li>Ptrace with threads</li>
 </ul>
 
-
-    <script src="https://utteranc.es/client.js"
-            repo="gatowololo/PersonalWebsite"
-            issue-term="pathname"
-            theme="github-light"
-            crossorigin="anonymous"
-            async>
-    </script>
 </div>
-
 
         </div>
     </body>

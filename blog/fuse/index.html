@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
     <head>
       <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -11,9 +10,9 @@
       <title>Time For Crab 🦀</title>
 
       <!-- CSS -->
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;print.css" media="print">
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;poole.css">
-      <link rel="stylesheet" href="https:&#x2F;&#x2F;gatowololo.github.io&#x2F;hyde.css">
+      <link rel="stylesheet" href="https://gatowololo.github.io/print.css" media="print">
+      <link rel="stylesheet" href="https://gatowololo.github.io/poole.css">
+      <link rel="stylesheet" href="https://gatowololo.github.io/hyde.css">
       <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
       
@@ -40,11 +39,13 @@
                         
                         <li><a href="&#x2F;">About Me</a></li>
                         
-                        <li><a href="&#x2F;blog&#x2F;">Blog</a></li>
+                        <li><a href="&#x2F;resources&#x2F;aboutme&#x2F;omar_resume.pdf">CV</a></li>
                         
-                        <li><a href="&#x2F;publications">Publications</a></li>
+                        <li><a href="&#x2F;publications&#x2F;main">Publications</a></li>
                         
                         <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
+                        
+                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
                         
                         
                     </ul>
@@ -56,88 +57,9 @@
           
 <div class="post">
   <h1 class="post-title">FUSE From Scratch</h1>
-  <span class="post-date"> Last updated: 22-02-2019</span>
-
-    <h3>Table Of Content</h3>
-    
-        <ul>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/fuse/#why-this-blog">Why this blog?</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/fuse/#introduction">Introduction</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/fuse/#passthrough-filesystem">Passthrough Filesystem</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/fuse/#rust-fuse-library">Rust Fuse Library</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-                <li>
-                    <a href="https://gatowololo.github.io/blog/fuse/#passthrough-rs">Passthrough.rs</a>
-
-
-
-
-
-
-
-
-
-
-                </li>
-            
-        </ul>
-    
-
+  <span class="post-date"> Last updated: 2019-02-22</span>
   <p><strong>This is a work in progress entry! If you arrived here! Turn back. It is not ready.</strong></p>
-<h2 id="why-this-blog"><a class="zola-anchor" href="#why-this-blog" aria-label="Anchor link for: why-this-blog">🔗</a>
-Why this blog?</h2>
+<h2 id="why-this-blog"><a class="zola-anchor" href="#why-this-blog" aria-label="Anchor link for: why-this-blog">🔗</a>Why this blog?</h2>
 <p>While FUSE is an amazing piece of technology, I found it too difficult to get started
 with. Information on FUSE is spread across the web in a combination of blogs,
 mailing list questions, and source code header documentation. <a href="https://github.com/libfuse/libfuse" title="Github Repo">libfuse</a> contains &quot;documentation&quot; in the form of doxygen generated
@@ -159,8 +81,7 @@ libfuse, the design is almost identical and all information transfers over.
 <strong>Prerequistes:</strong> This guide assumes familiarity of C and Rust. As wells as knowledge of
 libc system calls for interacting with the filesystem (open, close, mkdir, stat, etc),
 and basic knowledge of Linux filesystems (inodes, file descriptors).</p>
-<h1 id="introduction"><a class="zola-anchor" href="#introduction" aria-label="Anchor link for: introduction">🔗</a>
-Introduction</h1>
+<h1 id="introduction"><a class="zola-anchor" href="#introduction" aria-label="Anchor link for: introduction">🔗</a>Introduction</h1>
 <p>Most filesystems are written as part of the kernel (e.g. kernel module), this is allows
 for efficient implementation of custom filesystems, as the filesystem runs as part of the
 kernel. However, we lose portability, ease of programming, and security (see kernel modules
@@ -187,8 +108,7 @@ include the path the user wants to do an operation on.</li>
 bookkeeping done to keep track of paths. While the high-level API seems more appealing,
 the low-level API is more flexible: Not all POSIX filesystem operations can be given in
 terms of paths. We will see an example of this later.</p>
-<h1 id="passthrough-filesystem"><a class="zola-anchor" href="#passthrough-filesystem" aria-label="Anchor link for: passthrough-filesystem">🔗</a>
-Passthrough Filesystem</h1>
+<h1 id="passthrough-filesystem"><a class="zola-anchor" href="#passthrough-filesystem" aria-label="Anchor link for: passthrough-filesystem">🔗</a>Passthrough Filesystem</h1>
 <p>We will be implementing a FUSE layer almost identical to the <a href="https://github.com/libfuse/libfuse/blob/master/example/passthrough_ll.c">passthrough_ll.c</a> libfuse example.
 Passthrough works as an intermediary FUSE layer between a user program the underlying OS.
 That is, for each filesystem request from the program makes, we will merely defer the
@@ -199,14 +119,13 @@ for the OS to handle.</p>
 perform an equivalent <code>open(&quot;myFile.txt&quot;)</code> from our FUSE process, creating the illusion
 that the user program is doing the operations itself.</p>
 <p>Our passthrough program will take two arguments:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#268bd2;">USAGE:
-</span><span style="color:#657b83;">    </span><span style="color:#268bd2;">./passthrough -t </span><span style="color:#657b83;">&lt;file_tree&gt; -m &lt;mount_point&gt;
+<pre data-lang="bash" class="language-bash "><code class="language-bash" data-lang="bash">USAGE:
+    .&#x2F;passthrough -t &lt;file_tree&gt; -m &lt;mount_point&gt;
 
 OPTIONS:
-</span><span style="color:#657b83;">  </span><span style="color:#268bd2;">-t </span><span style="color:#657b83;">&lt;file_tree&gt; Real directory to do read and write operations through the real filesystem.
-</span><span style="color:#657b83;">  </span><span style="color:#268bd2;">-m </span><span style="color:#657b83;">&lt;mount_point&gt; Place to mount fuse filesystem.
-</span></pre>
+  -t &lt;file_tree&gt; Real directory to do read and write operations through the real filesystem.
+  -m &lt;mount_point&gt; Place to mount fuse filesystem.
+</code></pre>
 <p><code>mount_point</code> is the mounted directory where all operations will go to our FUSE process,
 <code>file_tree</code> is the &quot;real&quot; directory where we do all filesystem operations to. We require
 a separate <code>file_tree/</code> directory: if you tried using the same directory both as a mount
@@ -214,15 +133,13 @@ point and for your FUSE process to do operations on, you end up recursing on you
 requests and the process hangs forever. So we do all operations to a separate directory. (This is
 different from the libfuse <code>passthrough_ll.c</code> example, which mirrors the entire filesystem
 tree stating at <code>/</code> to the mount point).</p>
-<h1 id="rust-fuse-library"><a class="zola-anchor" href="#rust-fuse-library" aria-label="Anchor link for: rust-fuse-library">🔗</a>
-Rust Fuse Library</h1>
+<h1 id="rust-fuse-library"><a class="zola-anchor" href="#rust-fuse-library" aria-label="Anchor link for: rust-fuse-library">🔗</a>Rust Fuse Library</h1>
 <p>We will use the high-level, idiomatic library for Rust <a href="https://github.com/zargony/rust-fuse">rust-fuse</a>. This crate isn't just FUSE bindings, instead it is a from-scratch
 rewrite of the FUSE userspace protocol necessary to communicate with the kernel.</p>
 <p>rust-fuse provides a trait <a href="https://docs.rs/fuse/0.3.1/fuse/trait.Filesystem.html">FileSystem</a>, our job is to implement these trait's methods. The methods directly mirror
 those of the low-level API provided by libfuse. Consider:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#268bd2;">fn </span><span style="color:#b58900;">readlink</span><span style="color:#657b83;">(</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">req</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;</span><span style="color:#657b83;">Request, </span><span style="color:#268bd2;">ino</span><span style="color:#657b83;">: </span><span style="color:#268bd2;">u64</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">reply</span><span style="color:#657b83;">: ReplyData);
-</span></pre>
+<pre data-lang="rust" class="language-rust "><code class="language-rust" data-lang="rust">fn readlink(&amp;mut self, req: &amp;Request, ino: u64, reply: ReplyData);
+</code></pre>
 <p>With an given an inode represents a symbolic link, <code>readlink</code> expects us to return the path   our symbolic link points to. We will see how to know what file this inode refers to later. The arguments are as followed:</p>
 <ul>
 <li>self: This is a mutable reference to our user-defined type that implements the FileSystem trait. We can keep &quot;global&quot; filesystem state here as fields on our type.</li>
@@ -238,15 +155,12 @@ for servicing multiple requests at once. We do not cover this feature in this gu
 <p>Great! You're all ready to implement a userspace filesystem now?! Ehh, almost. The
 devil is in the details. We will explain the high-level ideas, and implementation details
 in the upcoming sections.</p>
-<h1 id="passthrough-rs"><a class="zola-anchor" href="#passthrough-rs" aria-label="Anchor link for: passthrough-rs">🔗</a>
-Passthrough.rs</h1>
+<h1 id="passthrough-rs"><a class="zola-anchor" href="#passthrough-rs" aria-label="Anchor link for: passthrough-rs">🔗</a>Passthrough.rs</h1>
 <p>Here we discuss the full design of our filesystem.</p>
-<h2 id="lookup"><a class="zola-anchor" href="#lookup" aria-label="Anchor link for: lookup">🔗</a>
-lookup</h2>
+<h2 id="lookup"><a class="zola-anchor" href="#lookup" aria-label="Anchor link for: lookup">🔗</a>lookup</h2>
 <p>The very first requests you will see when you start the FUSE daemon are lookup:</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#268bd2;">fn </span><span style="color:#b58900;">lookup</span><span style="color:#657b83;">(</span><span style="color:#859900;">&amp;mut </span><span style="color:#268bd2;">self</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">req</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;</span><span style="color:#657b83;">Request, </span><span style="color:#268bd2;">parent</span><span style="color:#657b83;">: </span><span style="color:#268bd2;">u64</span><span style="color:#657b83;">, </span><span style="color:#268bd2;">name</span><span style="color:#657b83;">: </span><span style="color:#859900;">&amp;</span><span style="color:#657b83;">OsStr, </span><span style="color:#268bd2;">reply</span><span style="color:#657b83;">: ReplyEntry)
-</span></pre>
+<pre data-lang="rust" class="language-rust "><code class="language-rust" data-lang="rust">fn lookup(&amp;mut self, req: &amp;Request, parent: u64, name: &amp;OsStr, reply: ReplyEntry)
+</code></pre>
 <p><code>parent</code> is an inode to the directory where this request takes place, and <code>name</code> is
 the file<sup class="footnote-reference"><a href="#2">2</a></sup> inside the <code>parent</code> directory. The very first call to lookup will have <code>parent=1</code>.
 Through our starting command line arguments, we know what directory the user specified as our mountpoint so we can keep track of the fact that <code>inode 1 -&gt; mount point directory</code>. We have a map <code>inode_data: HashMap&lt;u64, FileRef&gt;</code> which maps inodes to an open file descriptor for that inode. In the next section we will see why we use file descriptors instead of paths in our implementation.</p>
@@ -262,32 +176,21 @@ ready as <code>inode</code>. Well this inode must be looked up in our <code>inod
 we know the entry will be there? Well, the entry <em>has</em> to be there. Let's see the way
 FUSE works, given a small sample:</p>
 <p><code>forget</code> does the exact opposite</p>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">  - Release
-</span><span style="color:#657b83;">  - Flush
-</span><span style="color:#657b83;">  - Mapping Inodes to Paths, What goes wrong?
-</span><span style="color:#657b83;">  - Mapping inodes to file descriptors
-</span><span style="color:#657b83;">  - Nix and libc
-</span><span style="color:#657b83;">  - Permissions
-</span></pre><h2 id="details-of-implementation"><a class="zola-anchor" href="#details-of-implementation" aria-label="Anchor link for: details-of-implementation">🔗</a>
-Details of implementation</h2>
-<h2 id="look-up-and-forget-file-descriptor-references"><a class="zola-anchor" href="#look-up-and-forget-file-descriptor-references" aria-label="Anchor link for: look-up-and-forget-file-descriptor-references">🔗</a>
-Look Up and Forget file descriptor references.</h2>
-<pre style="background-color:#fdf6e3;">
-<span style="color:#657b83;">[^1]: Actually, pairs of `(inode, device_number)` uniquely identify a file in a system. We do not worry about that here.
+<pre><code>  - Release
+  - Flush
+  - Mapping Inodes to Paths, What goes wrong?
+  - Mapping inodes to file descriptors
+  - Nix and libc
+  - Permissions
+</code></pre>
+<h2 id="details-of-implementation"><a class="zola-anchor" href="#details-of-implementation" aria-label="Anchor link for: details-of-implementation">🔗</a>Details of implementation</h2>
+<h2 id="look-up-and-forget-file-descriptor-references"><a class="zola-anchor" href="#look-up-and-forget-file-descriptor-references" aria-label="Anchor link for: look-up-and-forget-file-descriptor-references">🔗</a>Look Up and Forget file descriptor references.</h2>
+<pre><code>[^1]: Actually, pairs of `(inode, device_number)` uniquely identify a file in a system. We do not worry about that here.
 
-</span><span style="color:#657b83;">[^2]: I use file here a generic term to mean: file, directory, fifo, device, etc. Since ?everything? in Linux is a file.
-</span></pre>
+[^2]: I use file here a generic term to mean: file, directory, fifo, device, etc. Since ?everything? in Linux is a file.
+</code></pre>
 
-    <script src="https://utteranc.es/client.js"
-            repo="gatowololo/PersonalWebsite"
-            issue-term="pathname"
-            theme="github-light"
-            crossorigin="anonymous"
-            async>
-    </script>
 </div>
-
 
         </div>
     </body>
