@@ -21,7 +21,7 @@
       
     </head>
 
-    <body class="theme-base-08 ">
+    <body class="theme-base-0d layout-reverse">
         
             <div class="sidebar">
                 <div class="container sidebar-sticky">
@@ -29,7 +29,7 @@
                         
                             <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>Time For Crab 🦀</h1></a>
                             
-                            <p class="lead">Rust: Taste like crab, fast like C.</p>
+                            <p class="lead">My personal website</p>
                             
                         
                     </div>
@@ -39,13 +39,15 @@
                         
                         <li><a href="&#x2F;">About Me</a></li>
                         
-                        <li><a href="&#x2F;resources&#x2F;aboutme&#x2F;omar_resume.pdf">CV</a></li>
-                        
-                        <li><a href="&#x2F;publications&#x2F;main">Publications</a></li>
-                        
-                        <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
+                        <li><a href="&#x2F;resources&#x2F;aboutme&#x2F;omar_resume.pdf">Resume</a></li>
                         
                         <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
+                        
+                        <li><a href="&#x2F;publications&#x2F;main">Research Publications</a></li>
+                        
+                        <li><a href="&#x2F;teaching&#x2F;main">Past Teaching</a></li>
+                        
+                        <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
                         
                         
                     </ul>
@@ -57,17 +59,17 @@
           
 <div class="post">
   <h1 class="post-title">Clang++ missing C++ header?</h1>
-  <span class="post-date"> Last updated: 2018-11-14</span>
+  <span class="post-date">2018-11-14</span>
   <p>(Hopefully someone will find this useful, since I was not able to find any other clear
 resource online).</p>
 <h3 id="problem"><a class="zola-anchor" href="#problem" aria-label="Anchor link for: problem">🔗</a>Problem</h3>
 <p>In our Linux Ubuntu 18.04 server, I kept getting this error when trying to compile our
 C++ project with clang++:</p>
-<pre data-lang="bash" class="language-bash "><code class="language-bash" data-lang="bash">dettraceSystemCall.cpp:17:10: fatal error: &#x27;limits&#x27; file not found
-#include &lt;limits&gt;
-        ^~~~~~~~
-</code></pre>
-<p>Looking online I was not able to find much help. Googling &quot;clang missing c++ headers&quot;
+<pre data-lang="bash" style="background-color:#fdf6e3;color:#657b83;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#b58900;">dettraceSystemCall.cpp:17:10:</span><span> fatal error: </span><span style="color:#839496;">&#39;</span><span style="color:#2aa198;">limits</span><span style="color:#839496;">&#39;</span><span> file not found
+</span><span style="color:#93a1a1;">#include &lt;limits&gt;
+</span><span>        </span><span style="color:#b58900;">^</span><span style="color:#d33682;">~~~~~~~
+</span></code></pre>
+<p>Looking online I was not able to find much help. Googling "clang missing c++ headers"
 returned the only relevant search <a href="https://stackoverflow.com/questions/26333823/clang-doesnt-see-basic-headers">clang doesn't see basic headers</a>.</p>
 <p>None of these answers were helpful to me... Compiling with g++ works, so I do have the correct C++ headers installed.</p>
 <h3 id="solution"><a class="zola-anchor" href="#solution" aria-label="Anchor link for: solution">🔗</a>Solution</h3>
@@ -77,42 +79,42 @@ returned the only relevant search <a href="https://stackoverflow.com/questions/2
 preprocessor is responsible for expanding macros and finding headers) and <code>-v</code> (verbose)
 flags.</p>
 <p>This prints out a lot of input, but shorted to the relevant parts:</p>
-<pre data-lang="bash" class="language-bash "><code class="language-bash" data-lang="bash">clang version 6.0.0-1ubuntu2 (tags&#x2F;RELEASE_600&#x2F;final)
-Target: x86_64-pc-linux-gnu
-Thread model: posix
-InstalledDir: &#x2F;usr&#x2F;bin
-Found candidate GCC installation: &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;7
-Found candidate GCC installation: &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;7.3.0
-Found candidate GCC installation: &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8
-Found candidate GCC installation: &#x2F;usr&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;7
-Found candidate GCC installation: &#x2F;usr&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;7.3.0
-Found candidate GCC installation: &#x2F;usr&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8
-Selected GCC installation: &#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8
-...
-#include &quot;...&quot; search starts here:
-#include &lt;...&gt; search starts here:
-..&#x2F;include
-&#x2F;usr&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;x86_64-linux-gnu&#x2F;8&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;include&#x2F;c++
-&#x2F;usr&#x2F;include&#x2F;clang&#x2F;6.0.0&#x2F;include
-&#x2F;usr&#x2F;local&#x2F;include
-&#x2F;usr&#x2F;include&#x2F;x86_64-linux-gnu
-&#x2F;usr&#x2F;include
-End of search list.
-...
-</code></pre>
+<pre data-lang="bash" style="background-color:#fdf6e3;color:#657b83;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#b58900;">clang</span><span> version 6.0.0-1ubuntu2 (tags/RELEASE_600/final)
+</span><span style="color:#b58900;">Target:</span><span> x86_64-pc-linux-gnu
+</span><span style="color:#b58900;">Thread</span><span> model: posix
+</span><span style="color:#b58900;">InstalledDir:</span><span> /usr/bin
+</span><span style="color:#b58900;">Found</span><span> candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/7
+</span><span style="color:#b58900;">Found</span><span> candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/7.3.0
+</span><span style="color:#b58900;">Found</span><span> candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/8
+</span><span style="color:#b58900;">Found</span><span> candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/7
+</span><span style="color:#b58900;">Found</span><span> candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/7.3.0
+</span><span style="color:#b58900;">Found</span><span> candidate GCC installation: /usr/lib/gcc/x86_64-linux-gnu/8
+</span><span style="color:#b58900;">Selected</span><span> GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/8
+</span><span style="color:#b58900;">...
+</span><span style="color:#93a1a1;">#include &quot;...&quot; search starts here:
+</span><span style="color:#93a1a1;">#include &lt;...&gt; search starts here:
+</span><span style="color:#b58900;">../include
+</span><span style="color:#b58900;">/usr/bin/../lib/gcc/x86_64-linux-gnu/8/../../../../include/c++
+</span><span style="color:#b58900;">/usr/include/clang/6.0.0/include
+</span><span style="color:#b58900;">/usr/local/include
+</span><span style="color:#b58900;">/usr/include/x86_64-linux-gnu
+</span><span style="color:#b58900;">/usr/include
+</span><span style="color:#b58900;">End</span><span> of search list.
+</span><span style="color:#b58900;">...
+</span></code></pre>
 <p>So, the server has several gcc installations: 7, 7.3, and 8. Out of those clang++
 is picking gcc version 8: <code>Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/8</code>.</p>
 <p>Since <code>g++</code> works I know the C++ headers have to be somewhere? Where are they located?</p>
-<pre data-lang="bash" class="language-bash "><code class="language-bash" data-lang="bash">$&gt; find &#x2F;usr -name &quot;iostream&quot;
-&#x2F;usr&#x2F;include&#x2F;c++&#x2F;7&#x2F;iostream
-</code></pre>
+<pre data-lang="bash" style="background-color:#fdf6e3;color:#657b83;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#b58900;">$</span><span>&gt; find /usr</span><span style="color:#268bd2;"> -name </span><span style="color:#839496;">&quot;</span><span style="color:#2aa198;">iostream</span><span style="color:#839496;">&quot;
+</span><span style="color:#b58900;">/usr/include/c++/7/iostream
+</span></code></pre>
 <p>Interesting... Only g++-7 seems to have the C++ header files, but it's picking gcc-8 as the installation to use!
 Somehow, the server has g++-8 installed but not it's header files? I used <code>sudo apt install g++-8</code> to install all g++-8 headers.</p>
 <p>Now:</p>
-<pre><code>$&gt; find &#x2F;usr -name &quot;iostream&quot;
-&#x2F;usr&#x2F;include&#x2F;c++&#x2F;8&#x2F;iostream
-&#x2F;usr&#x2F;include&#x2F;c++&#x2F;7&#x2F;iostream
-</code></pre>
+<pre style="background-color:#fdf6e3;color:#657b83;"><code><span>$&gt; find /usr -name &quot;iostream&quot;
+</span><span>/usr/include/c++/8/iostream
+</span><span>/usr/include/c++/7/iostream
+</span></code></pre>
 <p>And clang++ works :)</p>
 <h2 id="background"><a class="zola-anchor" href="#background" aria-label="Anchor link for: background">🔗</a>Background</h2>
 <p>It seems the cause of the issue is that clang++ does not come with it's own headers or

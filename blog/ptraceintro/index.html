@@ -21,7 +21,7 @@
       
     </head>
 
-    <body class="theme-base-08 ">
+    <body class="theme-base-0d layout-reverse">
         
             <div class="sidebar">
                 <div class="container sidebar-sticky">
@@ -29,7 +29,7 @@
                         
                             <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>Time For Crab 🦀</h1></a>
                             
-                            <p class="lead">Rust: Taste like crab, fast like C.</p>
+                            <p class="lead">My personal website</p>
                             
                         
                     </div>
@@ -39,13 +39,15 @@
                         
                         <li><a href="&#x2F;">About Me</a></li>
                         
-                        <li><a href="&#x2F;resources&#x2F;aboutme&#x2F;omar_resume.pdf">CV</a></li>
-                        
-                        <li><a href="&#x2F;publications&#x2F;main">Publications</a></li>
-                        
-                        <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
+                        <li><a href="&#x2F;resources&#x2F;aboutme&#x2F;omar_resume.pdf">Resume</a></li>
                         
                         <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
+                        
+                        <li><a href="&#x2F;publications&#x2F;main">Research Publications</a></li>
+                        
+                        <li><a href="&#x2F;teaching&#x2F;main">Past Teaching</a></li>
+                        
+                        <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
                         
                         
                     </ul>
@@ -57,7 +59,7 @@
           
 <div class="post">
   <h1 class="post-title">Ptrace and You</h1>
-  <span class="post-date"> Last updated: 2018-06-19</span>
+  <span class="post-date">2018-06-19</span>
   <h2 id="ptrace-you-a-comprehensive-overview-of-ptrace"><a class="zola-anchor" href="#ptrace-you-a-comprehensive-overview-of-ptrace" aria-label="Anchor link for: ptrace-you-a-comprehensive-overview-of-ptrace">🔗</a>Ptrace &amp; You: A comprehensive overview of ptrace</h2>
 <p>Our current project involves heavy use of <code>ptrace</code>. While <code>man 2 ptrace</code> offers
 an in depth technical description, it is very difficult to follow for beginners (hence all
@@ -82,7 +84,7 @@ registers, of the <em>tracee</em>. This functionality is extremely powerful, pro
 <code>gdb</code> and <code>strace</code> are powered by <code>ptrace</code>!</p>
 <h3 id="ptrace-at-the-kernel-level"><a class="zola-anchor" href="#ptrace-at-the-kernel-level" aria-label="Anchor link for: ptrace-at-the-kernel-level">🔗</a>Ptrace at the kernel level</h3>
 <p>From the <code>ptrace</code> <a href="https://linux.die.net/man/2/ptrace">man page</a>,
-&quot;The ptrace API (ab)uses the standard UNIX parent/child  signaling  over  waitpid(2).&quot;</p>
+"The ptrace API (ab)uses the standard UNIX parent/child  signaling  over  waitpid(2)."</p>
 <p>Ptrace, in some ways, replaces the <em>tracee</em>'s true parent with our <em>tracer</em>. When one
 of many ptrace-events happens, the kernel puts the <em>tracee</em> in a stopped state, forwards
 the message to the <em>tracer</em>, the tracer may perform arbitrary computation here. The
@@ -93,19 +95,19 @@ the kernel allows the stopped <em>tracee</em> to run once more.</p>
 I have not been able to find any report/publication quantifying the overhead of <code>ptrace</code>.
 However, a very rough test, running a simple for loop <em>n</em> times (for a sufficiently
 large <em>n</em>), doing a trivial system call, like <code>getpid()</code>:</p>
-<pre data-lang="C" class="language-C "><code class="language-C" data-lang="C">#include &lt;unistd.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;stdint.h&gt;
-#include &lt;sys&#x2F;syscall.h&gt;
-
-int main(){
-  for(int i = 0; i &lt; 10000000; i++){
-    int res = syscall(SYS_getpid);
-  }
-
-  return 0;
-}
-</code></pre>
+<pre data-lang="C" style="background-color:#fdf6e3;color:#657b83;" class="language-C "><code class="language-C" data-lang="C"><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">unistd.h</span><span style="color:#839496;">&gt;
+</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">stdio.h</span><span style="color:#839496;">&gt;
+</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">stdint.h</span><span style="color:#839496;">&gt;
+</span><span style="color:#cb4b16;">#include </span><span style="color:#839496;">&lt;</span><span style="color:#2aa198;">sys/syscall.h</span><span style="color:#839496;">&gt;
+</span><span>
+</span><span style="color:#268bd2;">int </span><span style="color:#b58900;">main</span><span>(){
+</span><span>  </span><span style="color:#859900;">for</span><span>(</span><span style="color:#268bd2;">int</span><span> i = </span><span style="color:#6c71c4;">0</span><span>; i &lt; </span><span style="color:#6c71c4;">10000000</span><span>; i++){
+</span><span>    </span><span style="color:#268bd2;">int</span><span> res = </span><span style="color:#b58900;">syscall</span><span>(SYS_getpid);
+</span><span>  }
+</span><span>
+</span><span>  </span><span style="color:#859900;">return </span><span style="color:#6c71c4;">0</span><span>;
+</span><span>}
+</span></code></pre>
 <p>On my laptop, this program takes 0.82 seconds of user time (averaged from 3 runs using the <code>time</code>
 command). While ptraced, it takes about 13.18 seconds, a 15x slowdown. Note this
 is a worst case scenario when a program continuously calls many system calls. <code>getpid()</code>
@@ -121,8 +123,8 @@ overhead comes from. (In a future blog, we will see how using <code>seccomp + bp
 can mitigate this overhead, and the number of context switches).</p>
 <h3 id="using-ptrace"><a class="zola-anchor" href="#using-ptrace" aria-label="Anchor link for: using-ptrace">🔗</a>Using ptrace</h3>
 <p>Let's have a look at the <code>ptrace</code> system call API:</p>
-<pre data-lang="C" class="language-C "><code class="language-C" data-lang="C">long ptrace(enum __ptrace_request request, pid_t pid, void *addr, void *data);
-</code></pre>
+<pre data-lang="C" style="background-color:#fdf6e3;color:#657b83;" class="language-C "><code class="language-C" data-lang="C"><span style="color:#268bd2;">long </span><span style="color:#b58900;">ptrace</span><span>(</span><span style="color:#268bd2;">enum</span><span> __ptrace_request </span><span style="color:#268bd2;">request</span><span>, </span><span style="color:#859900;">pid_t </span><span style="color:#268bd2;">pid</span><span>, </span><span style="color:#268bd2;">void </span><span style="color:#859900;">*</span><span style="color:#268bd2;">addr</span><span>, </span><span style="color:#268bd2;">void </span><span style="color:#859900;">*</span><span style="color:#268bd2;">data</span><span>);
+</span></code></pre>
 <p>As we will see, a lot of functionality and complexity is packed into this API.</p>
 <ul>
 <li>
