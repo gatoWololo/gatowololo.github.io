@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+      <!-- Enable responsiveness on mobile devices-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+      <title>Time For Crab 🦀</title>
+
+      <!-- CSS -->
+      <link rel="stylesheet" href="https://gatowololo.github.io/print.css" media="print">
+      <link rel="stylesheet" href="https://gatowololo.github.io/poole.css">
+      <link rel="stylesheet" href="https://gatowololo.github.io/hyde.css">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+      
+
+      
+      
+    </head>
+
+    <body class="theme-base-0d layout-reverse">
+        
+            <div class="sidebar">
+                <div class="container sidebar-sticky">
+                    <div class="sidebar-about">
+                        
+                            <a href="https:&#x2F;&#x2F;gatowololo.github.io"><h1>Time For Crab 🦀</h1></a>
+                            
+                            <p class="lead">My personal website</p>
+                            
+                        
+                    </div>
+
+                    <ul class="sidebar-nav">
+                        
+                        
+                        <li><a href="&#x2F;">About Me</a></li>
+                        
+                        <li><a href="&#x2F;resources&#x2F;aboutme&#x2F;omar_resume_websafe.pdf">Resume</a></li>
+                        
+                        <li><a href="&#x2F;blog&#x2F;main">Blog</a></li>
+                        
+                        <li><a href="&#x2F;publications&#x2F;main">Research Publications</a></li>
+                        
+                        <li><a href="&#x2F;teaching&#x2F;main">Past Teaching</a></li>
+                        
+                        <li><a href="https:&#x2F;&#x2F;github.com&#x2F;gatoWololo">Github</a></li>
+                        
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div class="content container">
+          
+<div class="post">
+  <h1 class="post-title">Using Sticky Keys on Wayland without &#x27;latchlock&#x27; Behavior</h1>
+  <span class="post-date">2025-08-17</span>
+  <h3 id="introduction"><a class="zola-anchor" href="#introduction" aria-label="Anchor link for: introduction">🔗</a>Introduction</h3>
+<p>I use sticky keys due to accessibility issues. One problem with the "sticky keys"
+accessibility setting on Ubuntu is the default "latchlock" behavior. As explained in the <code>xkbset</code>
+man page:</p>
+<blockquote>
+<p>a modifier pressed twice will be locked</p>
+</blockquote>
+<p>So if you accidentally press a modifier key <strong>twice</strong> while typing, e.g. the control key, it will
+lock the key leading to very frustrating and confusing behavior. The problem is explained in
+detail in this <a href="https://askubuntu.com/questions/880740/disable-sticky-keys-locked-after-being-successively-pressed-twice-behavior">Ask Ubuntu question</a>.
+This makes "sticky keys" virtually unusable for me on Ubuntu. This is true as of the latest
+25.04 Ubuntu version.</p>
+<p>There is a confusing, outdated, and underdocumented amount of information on the internet about
+this issue. Here I try to give some background and explain a working solution.</p>
+<h3 id="problem-with-xkb-set"><a class="zola-anchor" href="#problem-with-xkb-set" aria-label="Anchor link for: problem-with-xkb-set">🔗</a>Problem with XKB Set</h3>
+<p>If you are using X Window (X11) still, you can simply use XKB set to remove the default latchlock option.
+Like so:</p>
+<blockquote>
+<p>xkbset sticky -twokey -latchlock</p>
+</blockquote>
+<p>However, this does not work on Wayland. Ubuntu is moving to Wayland by default and in the future may
+not come with X Window included. So this solution may not work in the future. Plus I like all the shinny
+new features Wayland provides for the modern Ubuntu experience.</p>
+<h3 id="using-xkb-directly"><a class="zola-anchor" href="#using-xkb-directly" aria-label="Anchor link for: using-xkb-directly">🔗</a>Using XKB Directly</h3>
+<p>According to the Arch Linux Wiki <sup class="footnote-reference"><a href="#1">1</a></sup>: "The X keyboard extension, or XKB, defines the way keyboards codes are handled
+in X..." Even though XKB is related to X, it also works on Wayland (the exact details of this are beyond the scope
+of this post).</p>
+<p>We will use XKB to set create our own sticky keys configuration. First, there are rules and symbols files under
+<code>/usr/share/X11/xkb/rules/evdev</code> and <code>/usr/share/X11/xkb/symbols/</code>, respectively. As you might guess from the path,
+these are used by xkb for defining keyboard behavior. Note: even though the paths reference X11, this still works with
+Wayland. You can use the files in these directories as references or at least for keywords to look up.</p>
+<p>We will be creating our own symbols and rules files in our home directory; this is cleaner than messing with the global
+configs under <code>/usr</code>.</p>
+<p>This solution may seem long, but it boils down to putting two files in the correct directory structure and
+making the changes system-wide. <strong>This solution works as of Ubuntu 25.04 running with Wayland</strong>.</p>
+<h4 id="step-1-create-directory-structure"><a class="zola-anchor" href="#step-1-create-directory-structure" aria-label="Anchor link for: step-1-create-directory-structure">🔗</a>Step 1: Create Directory Structure</h4>
+<p>Create the following directory structure in your home directory (if it does not already exist):</p>
+<pre style="background-color:#fdf6e3;color:#657b83;"><code><span>&gt; tree .config/xkb/
+</span><span>.config/xkb/
+</span><span>├── rules
+</span><span>│   └── evdev
+</span><span>└── symbols
+</span><span>    └── custom
+</span></code></pre>
+<p>Note: <code>rules/</code> and <code>symbols/</code> are directories. <code>evdev</code> and <code>custom</code> are files which we will create in the next step.</p>
+<h4 id="step-2-create-custom-file"><a class="zola-anchor" href="#step-2-create-custom-file" aria-label="Anchor link for: step-2-create-custom-file">🔗</a>Step 2: Create <code>custom</code> file</h4>
+<p>Create a file called <code>custom</code> inside of <code>.config/xkb/symbols/</code>. Below are the contents using the <code>more</code> command. You
+can find more info on how this file works by following this footnote<sup class="footnote-reference"><a href="#2">2</a></sup>.</p>
+<pre style="background-color:#fdf6e3;color:#657b83;"><code><span>&gt; more .config/xkb/symbols/custom
+</span><span>partial alphanumeric_keys
+</span><span>xkb_symbols &quot;sticky&quot; {
+</span><span>    key &lt;RALT&gt; {
+</span><span>        symbols = [ ISO_Level3_Shift ],
+</span><span>        actions = [ LatchMods(mods=Alt,clearLocks) ]
+</span><span>    };
+</span><span>    key &lt;LALT&gt; {
+</span><span>        symbols = [ ISO_Level3_Shift ],
+</span><span>        actions = [ LatchMods(mods=Alt,clearLocks) ]
+</span><span>    };
+</span><span>    key &lt;LFSH&gt; {
+</span><span>        symbols = [ ISO_Level3_Shift ],
+</span><span>        actions = [ LatchMods(mods=Shift,clearLocks) ]
+</span><span>    };
+</span><span>    key &lt;RTSH&gt; {
+</span><span>        symbols = [ ISO_Level3_Shift ],
+</span><span>        actions = [ LatchMods(mods=Shift,clearLocks) ]
+</span><span>    };
+</span><span>    key &lt;RWIN&gt; {
+</span><span>        symbols = [ ISO_Level3_Shift ],
+</span><span>        actions = [ LatchMods(Mods=Super,clearLocks) ]
+</span><span>    };
+</span><span>    key &lt;LWIN&gt; {
+</span><span>        symbols = [ ISO_Level3_Shift ],
+</span><span>        actions = [ LatchMods(Mods=Super,clearLocks) ]
+</span><span>    };
+</span><span>    key &lt;LCTL&gt; {
+</span><span>        symbols = [ ISO_Level3_Shift ],
+</span><span>        actions = [ LatchMods(Mods=Control,clearLocks) ]
+</span><span>    };
+</span><span>    key &lt;RCTL&gt; {
+</span><span>        symbols = [ ISO_Level3_Shift ],
+</span><span>        actions = [ LatchMods(Mods=Control,clearLocks) ]
+</span><span>    };
+</span><span>};
+</span></code></pre>
+<p>Note: The name <code>custom</code> is arbitrary, but we will reference this name in another file. The name "sticky" is also
+arbitrary.</p>
+<h4 id="step-3-create-evdev-file"><a class="zola-anchor" href="#step-3-create-evdev-file" aria-label="Anchor link for: step-3-create-evdev-file">🔗</a>Step 3: Create <code>evdev</code> file.</h4>
+<p>Create file <code>evdev</code> under <code>.config/xkb/rules/</code>. Here are the contents of mine using the <code>more</code> command:</p>
+<pre style="background-color:#fdf6e3;color:#657b83;"><code><span>&gt; more .config/xkb/rules/evdev
+</span><span>! option    =   symbols
+</span><span>  custom:sticky     =   +custom(sticky)
+</span><span>  
+</span><span>! include %S/evdev
+</span></code></pre>
+<p>Here is where we reference our <code>custom</code> file name and our "sticky" name (if you use different names, switch them here).
+The last line of our <code>evdev</code> file <code>! include %S/evdev</code> just includes the system-level <code>evdev</code> file. So we end up with
+our rules plus the system rules.</p>
+<h4 id="step-4"><a class="zola-anchor" href="#step-4" aria-label="Anchor link for: step-4">🔗</a>Step 4:</h4>
+<p>The current way to set these changes in Ubuntu is using <code>gsettings</code>. This also makes it persistent across reboots and
+shutdowns. From a terminal, run command:</p>
+<pre style="background-color:#fdf6e3;color:#657b83;"><code><span>gsettings set org.gnome.desktop.input-sources xkb-options &#39;[&quot;custom:sticky&quot;]&#39;
+</span></code></pre>
+<p>Note: change the names on the last part of this command if you used different names.</p>
+<h3 id="troubleshooting"><a class="zola-anchor" href="#troubleshooting" aria-label="Anchor link for: troubleshooting">🔗</a>Troubleshooting</h3>
+<p>Originally the process above did not work for me even though I had worked on previous versions of Ubuntu. It turned
+out that I had weird whitespace issues in the <code>evdev</code> file. I was using tabs instead of spaces. This caused Wayland
+to fail on login, so I was stuck on a "log in loop". On restart Ubuntu was smart enough to switch from Wayland to X
+without my knowledge.</p>
+<p>Some troubleshooting tips:</p>
+<ul>
+<li>Use <code>echo $XDG_SESSION_TYPE</code> to ensure you are running wayland still.</li>
+<li>Warning: If you mess up the files above, Wayland may fail to start on login. Switch to X if that is an option, or
+delete the <code>.config/xkb/</code> files as a last resort.</li>
+</ul>
+<h3 id="footnotes"><a class="zola-anchor" href="#footnotes" aria-label="Anchor link for: footnotes">🔗</a>Footnotes</h3>
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>Arch Linux Wiki: <a href="https://wiki.archlinux.org/title/X_keyboard_extension">X keyboard extension</a></p>
+</div>
+<div class="footnote-definition" id="2"><sup class="footnote-definition-label">2</sup>
+<p>Check out <a href="https://github.com/swaywm/sway/issues/6852#issuecomment-1352547670">this issue on the Sway Github repository</a>
+for more info on the <code>custom</code> file. This is how I got sticky keys working for my set-up (No Sway necessary!).</p>
+</div>
+<p>(<em>No AI was used in the making of this post</em>)</p>
+
+</div>
+
+        </div>
+    </body>
+
+</html>
